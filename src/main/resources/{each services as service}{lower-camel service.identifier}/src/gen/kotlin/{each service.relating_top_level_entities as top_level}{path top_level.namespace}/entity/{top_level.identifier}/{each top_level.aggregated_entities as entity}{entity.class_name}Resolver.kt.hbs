@@ -1,0 +1,87 @@
+{{#define "entity_name"}}{{entity.class_name}}Entity{{/define}}
+{{#define "repository_name"}}{{top_level.class_name}}Repository{{/define}}
+{{#define "package"}}{{top_level.namespace}}.entity.{{top_level.identifier}}{{/define}}
+{{#define "lname"}}{{lower-camel entity.identifier}}{{/define}}
+package {{package}}
+import com.coxautodev.graphql.tools.GraphQLResolver
+import graphql.schema.DataFetchingEnvironment
+{{#each entity.relating_top_level_entities as |relating_entity|}}
+{{#define "rel_namespace"}}{{relating_entity.namespace}}.entity.{{lower-camel relating_entity.identifier}}{{/define}}
+import {{rel_namespace}}.{{relating_entity.class_name}}Entity
+import {{rel_namespace}}.{{relating_entity.class_name}}Resolver
+{{/each}}
+import org.dataloader.DataLoader
+import org.dataloader.DataLoaderRegistry
+import org.springframework.stereotype.Component
+import java.util.concurrent.CompletableFuture
+
+/**
+ * An implementation of {{entity.name}} entity data-loader.
+ */
+@Component
+class {{entity.class_name}}Resolver(
+    private val {{lower-camel repository_name}}: {{repository_name}}
+): GraphQLResolver<{{entity_name}}> {
+
+    {{#each entity.stored_properties as |property|}}
+    {{#unless property.primary_key}}
+    /**
+     * load the {{property.name}} of this entity.
+     */
+    fun {{property.property_name}}(self: {{entity_name}}, context: DataFetchingEnvironment): CompletableFuture<{{property.class_name}}> =
+        context
+        .getDataLoader<{{entity_name}}, {{entity_name}}>(BY_PK)
+        .load(self)
+        .thenApply<{{class_name}}>{ it.{{property.property_name}} }
+    {{/unless}}
+    {{/each}}
+
+    {{#each entity.stored_relationships as |relationship|}}
+    {{#define "ref_type"}}{{#trim}}
+    {{#if relationship.multiple}}
+    List<{{relationship.reference_entity.class_name}}Entity>
+    {{else}}
+    {{relationship.reference_entity.class_name}}Entity
+    {{/if}}
+    {{/trim}}{{/define}}
+    /**
+     * load the {{relationship.name}} of this entity.
+     */
+    fun {{relationship.property_name}}(self: {{entity_name}}, context: DataFetchingEnvironment): CompletableFuture<{{ref_type}}> =
+        context
+        {{#if relationship.multiple}}
+        .getDataLoader<{{entity_name}}, {{ref_type}}>({{upper-underscore relationship.property_name}})
+        .load(self)
+        {{else}}
+        .getDataLoader<{{ref_type}}, {{ref_type}}>({{upper-camel relationship.property_name}}Resolver.BY_PK)
+        .load(self.{{relationship.property_name}})
+        {{/if}}
+    {{/each}}
+
+    fun registerLoader(registry: DataLoaderRegistry) {
+        registry.register(BY_PK, DataLoader.newMappedDataLoader<{{entity_name}}, {{entity_name}}> { keys ->
+            {{lower-camel top_level.identifier}}Repository
+                .load{{upper-camel (plural entity.identifier)}}Async(keys)
+                .thenApply{ set -> set.map{ (it to it) }.toMap() }
+        })
+        {{#each entity.stored_relationships as |relationship|}}
+        {{#if relationship.multiple}}
+        {{define "ref_entity" relationship.reference_entity}}
+        registry.register({{upper-underscore relationship.property_name}}, DataLoader.newMappedDataLoader<{{entity_name}}, List<{{ref_entity.class_name}}Entity>> { keys ->
+            {{lname}}Repository
+                .load{{upper-camel relationship.property_name}}OfDeckAsync(keys)
+        })
+        {{/if}}
+        {{/each}}
+    }
+
+    companion object {
+        const val BY_PK = "{{lname}}_byPK"
+        {{#each entity.stored_relationships as |relationship|}}
+        {{#if relationship.multiple}}
+        const val {{upper-underscore relationship.property_name}} = "{{lname}}_{{relationship.property_name}}"
+        {{/if}}
+        {{/each}}
+    }
+}
+

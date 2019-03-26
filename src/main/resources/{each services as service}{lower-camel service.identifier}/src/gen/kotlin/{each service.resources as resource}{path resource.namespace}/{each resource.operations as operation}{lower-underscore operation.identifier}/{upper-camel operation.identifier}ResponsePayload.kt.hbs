@@ -1,0 +1,20 @@
+{{#define "response_class_name"}}{{upper-camel operation.identifier}}ResponsePayload{{/define}}
+{{#*inline "TYPE_OF_ITEM"}}{{#trim}}
+{{#if item.multiple}}
+List<{{item.entity.class_name}}Entity>
+{{else}}
+{{item.entity.class_name}}Entity
+{{/if}}
+{{/trim}}{{/inline}}
+package {{operation.namespace}}
+{{#each operation.relating_top_level_entities as |entity|}}
+import {{entity.namespace}}.entity.{{lower-underscore entity.identifier}}.{{entity.class_name}}Entity
+{{/each}}
+class {{response_class_name}} {
+    {{#each operation.response_body as |item|}}
+    {{#if item.entity}}
+    var {{lower-camel item.identifier}}: {{> TYPE_OF_ITEM}}{{#if item.multiple}} = emptyList(){{/if}}
+    {{else}}
+    {{/if}}
+    {{/each}}
+}

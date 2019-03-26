@@ -1,0 +1,8 @@
+#
+# The root query schema definition.
+#
+type Query {
+  {{#each service.relating_top_level_entities as |top_level|}}
+  {{lower-camel (plural top_level.identifier)}}: [{{top_level.class_name}}]!
+  {{/each}}
+}

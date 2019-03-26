@@ -1,0 +1,6 @@
+project:
+  group: laplacian-arch
+  type: template
+  name: api-server
+  subname: springboot
+  version: "1.0.0"

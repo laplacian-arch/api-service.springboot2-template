@@ -1,0 +1,9 @@
+package {{project.namespace}}.util
+
+import org.jooq.*
+
+fun <R: Record> TableField<R, *>.In(values: Collection<*>): Condition = this.`in`(values)
+fun <T1> Row1<T1>.In(vararg rows: Row1<T1>): Condition = this.`in`(*rows)
+fun <T1> Row1<T1>.In(rows: Collection<Row1<T1>>): Condition = this.`in`(rows)
+fun <T1, T2> Row2<T1, T2>.In(vararg rows: Row2<T1, T2>): Condition = this.`in`(*rows)
+fun <T1, T2> Row2<T1, T2>.In(rows: Collection<Row2<T1, T2>>): Condition = this.`in`(rows)

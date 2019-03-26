@@ -1,0 +1,26 @@
+{{#* inline "CLASS_NAME"}}{{upper-camel service.identifier}}Application{{/inline}}
+package {{service.namespace}}
+
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.annotation.ComponentScan
+import org.springframework.transaction.annotation.EnableTransactionManagement
+
+/**
+ * The launcher class for the {{service.name}} service.
+ */
+@SpringBootApplication
+@ComponentScan(basePackages = [{{> CLASS_NAME}}.COMPONENT_SCAN_ROOT])
+@EnableTransactionManagement
+class {{> CLASS_NAME}} {
+    companion object {
+        const val COMPONENT_SCAN_ROOT = "{{project.namespace}}"
+    }
+}
+
+/**
+ * The entry point of this service.
+ */
+fun main(args: Array<String>) {
+    SpringApplication.run({{> CLASS_NAME}}::class.java, *args)
+}

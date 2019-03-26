@@ -1,0 +1,10 @@
+build/
+out/
+.gradle/
+.idea
+*.log
+*.iml
+*.jar
+*.swp
+.DS_Store
+target/

@@ -1,0 +1,138 @@
+{{#define "entity_name"}}{{entity.class_name}}Entity{{/define}}
+{{#define "with_jooq"}}{{data_accesses.contains_jooq_scripts}}{{/define}}
+{{#define "package"}}{{top_level.namespace}}.entity.{{top_level.identifier}}{{/define}}
+package {{package}}
+{{#each entity.relating_top_level_entities as |e|}}
+{{#define "e_package"}}{{e.namespace}}.entity.{{e.identifier}}{{/define}}
+{{#unless (eq e_package package)}}
+import {{e_package}}.{{e.class_name}}Entity
+{{/unless}}
+{{/each}}
+{{#if with_jooq}}
+import org.jooq.Record
+import org.jooq.Result
+{{/if}}
+import java.util.*
+
+/**
+ * {{trim entity.description}}
+ */
+class {{entity_name}} {
+    {{#each entity.inherited_from as |inheritance|}}
+    {{#each inheritance.reference_entity.primary_keys as |pk|}}
+    /**
+     * {{trim pk.description}}
+     */
+    lateinit var {{lower-camel inheritance.identifier}}{{upper-camel pk.identifier}}: {{pk.class_name}}
+    {{/each}}
+    {{/each}}
+    {{#each entity.stored_properties as |p|}}
+    /**
+     * {{trim p.description}}
+     */
+    {{#if p.default_value}}
+    var {{p.property_name}}: {{p.class_name}} = {{p.default_value}}
+    {{else if (eq p.type "number")}}
+    var {{p.property_name}}: {{p.class_name}} = 0
+    {{else}}
+    lateinit var {{p.property_name}}: {{p.class_name}}
+    {{/if}}
+    {{/each}}
+
+    {{#each entity.stored_relationships as |r|}}
+    {{#if r.multiple}}
+    lateinit var {{r.property_name}}: List<{{r.reference_entity.class_name}}Entity>
+    {{else}}
+    /**
+     * {{trim r.description}}
+     */
+    var {{r.property_name}}: {{r.class_name}}Entity
+        {{#if r.inherited}}@JsonIgnore{{/if}}
+        get() = _{{r.property_name}} ?: {{r.class_name}}Entity().also {
+            {{#if r.inherited}}
+            {{#each r.reference_entity.primary_keys as |key|}}
+            it.{{lower-camel key.identifier}} = {{lower-camel r.property_name}}{{upper-camel key.identifier}}{{#unless @last}} &&{{/unless}}
+            {{/each}}
+            {{else}}
+            {{#each r.mappings as |m|}}
+            it.{{lower-camel m.to}} = {{lower-camel m.from}}{{#unless @last}} &&{{/unless}}
+            {{/each}}
+            {{/if}}
+        }
+        set(value) { _{{r.property_name}} = value }
+    private var _{{r.property_name}}: {{r.class_name}}Entity? = null
+    {{/if}}
+    {{/each}}
+
+    override fun equals(other: Any?): Boolean =
+        (other === this) ||
+        (other != null) &&
+        (other is {{entity_name}}) &&
+        {{#each entity.inherited_from as |inheritance|}}
+        {{#each inheritance.reference_entity.primary_keys as |pk|}}
+        {{#define "propname"}}{{lower-camel inheritance.property_name}}{{upper-camel pk.property_name}}{{/define}}
+        Objects.equals(this.{{propname}}, other.{{propname}}){{#unless (and @last (not entity.primary_keys))}} &&{{/unless}}
+        {{/each}}
+        {{/each}}
+        {{#each entity.primary_keys as |pk|}}
+        Objects.equals(this.{{pk.property_name}}, other.{{pk.property_name}}){{#unless @last}} &&{{/unless}}
+        {{/each}}
+
+    override fun hashCode(): Int = Objects.hash(
+        {{#each entity.inherited_from as |inheritance|}}
+        {{#each inheritance.reference_entity.primary_keys as |pk|}}
+        this.{{lower-camel inheritance.property_name}}{{upper-camel pk.property_name}}{{#unless (and @last (not entity.primary_keys))}},{{/unless}}
+        {{/each}}
+        {{/each}}
+        {{#each entity.primary_keys as |pk|}}
+        this.{{pk.property_name}}{{#unless @last}},{{/unless}}
+        {{/each}}
+    )
+
+    {{#if with_jooq}}
+    {{#define "lname"}}{{lower-camel entity.identifier}}{{/define}}
+    companion object {
+        {{#unless entity.stored_relationships}}
+        fun fromRecords(
+            records: Result<Record>,
+            vararg relationNames: String
+        ): List<{{entity_name}}> {
+            if (relationNames.isNotEmpty()) throw IllegalArgumentException(
+                "The {{entity.name}} entities do not have any relations: ${relationNames.joinToString(", ")}"
+            )
+            return records.into({{entity_name}}::class.java)
+        }
+        {{else}}
+        {{#each entity.stored_relationships as |r|}}
+        const val {{upper-underscore r.name}} = "{{upper-underscore r.name}}"
+        {{/each}}
+        /**
+         * Convert Jooq query result to the list of {{entity_name}}.
+         */
+        fun fromRecords(
+            records: Result<Record>,
+            vararg relationNames: String
+        ): List<{{entity_name}}> {
+            if (relationNames.isEmpty()) {
+                return records.into({{entity_name}}::class.java)
+            }
+            val next = relationNames.first()
+            val remaining = relationNames.drop(1)
+            return records.intoGroups({{entity_name}}::class.java).map { ({{lname}}, records) ->
+                when (next) {
+                    {{#each entity.stored_relationships as |r|}}
+                    {{upper-underscore r.name}} -> {
+                        {{lname}}.{{lower-camel r.name}} = {{r.reference_entity.class_name}}Entity.fromRecords(records, *remaining.toTypedArray()){{#unless r.multiple}}.first(){{/unless}}
+                    }
+                    {{/each}}
+                    else -> throw IllegalArgumentException(
+                        "The given relation name '$next' is unknown for {{entity_name}}. Only following values are allowed: {{#each entity.stored_relationships as |r|}}{{upper-underscore r.name}}{{#unless @last}},{{/unless}}{{/each}}."
+                    )
+                }
+                {{lname}}
+            }
+        }
+        {{/unless}}
+    }
+    {{/if}}
+}

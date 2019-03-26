@@ -1,0 +1,33 @@
+{{#define "package"}}{{service.namespace}}.query{{/define}}
+package {{package}}
+
+import com.coxautodev.graphql.tools.GraphQLQueryResolver
+import kotlinx.coroutines.future.future
+import kotlinx.coroutines.runBlocking
+{{#each service.relating_top_level_entities as |top_level|}}
+import {{top_level.namespace}}.entity.{{lower-underscore top_level.identifier}}.{{top_level.class_name}}Entity
+import {{top_level.namespace}}.entity.db.tables.{{top_level.class_name}}
+{{/each}}
+import org.jooq.DSLContext
+import org.springframework.stereotype.Component
+import java.util.concurrent.CompletableFuture
+
+@Component
+class QueryResolver(
+    val dsl: DSLContext
+): GraphQLQueryResolver {
+
+    {{#each service.relating_top_level_entities as |top_level|}}
+    {{#define "entity_name"}}{{top_level.identifier}}{{/define}}
+    val {{lower-camel entity_name}}: {{upper-camel entity_name}} = {{upper-camel entity_name}}.{{upper-underscore entity_name}}
+    {{/each}}
+
+    {{#each service.relating_top_level_entities as |top_level|}}
+    fun {{lower-camel (plural top_level.identifier)}}(): CompletableFuture<List<{{top_level.class_name}}Entity>> = runBlocking { future {
+        dsl
+        .select()
+        .from({{lower-camel top_level.identifier}})
+        .fetchInto({{top_level.class_name}}Entity::class.java)
+    }}
+    {{/each}}
+}

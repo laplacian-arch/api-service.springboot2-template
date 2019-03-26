@@ -1,0 +1,54 @@
+package {{service.namespace}}.configuration
+
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpHeaders.*
+import org.springframework.http.HttpMethod.*
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.reactive.CorsWebFilter
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
+import org.springframework.web.reactive.config.EnableWebFlux
+
+/**
+ * The global settings of this service.
+ */
+@Configuration
+@EnableWebFlux
+class WebApiConfiguration() {
+
+    companion object {
+        /**
+         * The all acceptable http method types.
+         */
+        val ALLOWED_METHODS = listOf(
+            GET, POST, DELETE, PUT, PATCH, OPTIONS
+        ).map{ it.name }
+
+        /**
+         * The all acceptable HTTP headers for an request.
+         */
+        val ALLOWED_HEADERS = listOf(
+            CONTENT_TYPE, AUTHORIZATION
+        )
+    }
+
+    /**
+     * The CORS settings for each requests.
+     */
+    @Bean
+    fun corsWebFilter(): CorsWebFilter {
+        val config = UrlBasedCorsConfigurationSource().apply {
+            registerCorsConfiguration(
+                "/**",
+                CorsConfiguration().apply {
+                    allowedOrigins = listOf("*")
+                    maxAge = 8000L
+                    allowedMethods = ALLOWED_METHODS
+                    allowedHeaders = ALLOWED_HEADERS
+                    allowCredentials = true
+                }
+            )
+        }
+        return CorsWebFilter(config)
+    }
+}
