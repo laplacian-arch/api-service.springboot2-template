@@ -1,0 +1,3 @@
+{{#define "sub-project"}}{{hyphen service.identifier}}-service{{/define}}
+include("{{sub-project}}")
+project(":{{sub-project}}").projectDir = file("services/{{hyphen service.identifier}}")
