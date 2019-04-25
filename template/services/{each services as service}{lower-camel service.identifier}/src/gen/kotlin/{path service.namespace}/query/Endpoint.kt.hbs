@@ -13,7 +13,7 @@ import {{entity_package}}.{{aggregate.reference_entity.class_name}}Resolver
 {{/each}}
 {{/each}}
 {{#each service.relating_top_level_entities as |top_level|}}
-import laplacian.tango.entity.db.tables.records.{{top_level.class_name}}Record
+import {{top_level.namespace}}.entity.db.tables.records.{{top_level.class_name}}Record
 {{/each}}
 import org.dataloader.DataLoaderRegistry
 import org.springframework.context.annotation.Bean

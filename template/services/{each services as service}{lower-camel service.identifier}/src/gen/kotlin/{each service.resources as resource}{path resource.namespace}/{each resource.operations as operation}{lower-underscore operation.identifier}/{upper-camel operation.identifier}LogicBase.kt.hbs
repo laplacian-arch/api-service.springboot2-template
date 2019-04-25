@@ -12,7 +12,7 @@ package {{operation.namespace}}
 {{lower-camel e.identifier}}
 {{/if}}
 {{/trim}}{{/define}}
-import laplacian.tango.entity.{{package}}.{{e.class_name}}Entity
+import {{e.namespace}}.entity.{{package}}.{{e.class_name}}Entity
 {{/each}}
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono

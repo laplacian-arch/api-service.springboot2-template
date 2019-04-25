@@ -1,3 +1,4 @@
-spring.datasource.url=${DATASOURCE_URL}
-spring.datasource.username=${DATASOURCE_USER}
-spring.datasource.password=${DATASOURCE_USER}
+{{define "datasource" service.datasource}}
+spring.datasource.url={{datasource.jdbc_url}}
+spring.datasource.username={{datasource.user}}
+spring.datasource.password={{datasource.password}}

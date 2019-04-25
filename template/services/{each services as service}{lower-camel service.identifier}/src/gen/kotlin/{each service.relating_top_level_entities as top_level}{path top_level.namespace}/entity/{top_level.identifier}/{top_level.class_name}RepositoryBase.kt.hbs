@@ -3,11 +3,11 @@
 package {{package}}
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
-import laplacian.tango.entity.db.tables.{{top_level.class_name}}
+import {{top_level.namespace}}.entity.db.tables.{{top_level.class_name}}
 {{#each top_level.relating_entities as |e|}}
-import laplacian.tango.entity.db.tables.{{e.class_name}}
+import {{e.namespace}}.entity.db.tables.{{e.class_name}}
 {{/each}}
-import laplacian.tango.util.*
+import {{project.namespace}}.util.*
 import org.jooq.DSLContext
 import org.jooq.impl.DSL.row
 import org.springframework.stereotype.Component

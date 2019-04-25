@@ -71,14 +71,14 @@ sourceSets {
         }
     }
 }
-
+{{define "datasource" service.datasource}}
 val generateJooqDsl by tasks.creating(JooqTask::class.java) {
     jooqClasspath = project.configurations.getByName("jooqRuntime")
     configuration = Configuration().apply {
         jdbc = Jdbc().apply {
-            url = System.getenv("DATASOURCE_URL")
-            user = System.getenv("DATASOURCE_USER")
-            password = System.getenv("DATASOURCE_PASS")
+            url = "{{datasource.jdbc_url}}"
+            user = "{{datasource.user}}"
+            password = "{{datasource.password}}"
         }
         generator = Generator().apply {
             name = "org.jooq.codegen.DefaultGenerator"
