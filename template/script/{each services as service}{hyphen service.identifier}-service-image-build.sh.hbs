@@ -1,0 +1,19 @@
+{{#define "service_name"}}{{hyphen service.identifier}}{{/define}}
+#!/usr/bin/env bash
+set -e
+DIR=$(cd $(dirname "$0") && pwd)
+BASE_DIR=$DIR/../services/{{service_name}}
+
+set -x
+source $DIR/{{service_name}}-service-image-settings.sh
+
+(cd "$DIR/.." && ./gradlew "{{service_name}}-service:bootJar")
+
+mkdir -p $BASE_DIR/container_image/build
+
+cp $BASE_DIR/build/libs/{{service_name}}-service-1.0.0.jar \
+   $BASE_DIR/container_image/build/app.jar
+
+docker build \
+  -t $TAG_CURRENT \
+  $BASE_DIR/container_image

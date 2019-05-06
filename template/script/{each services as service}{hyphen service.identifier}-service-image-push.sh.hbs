@@ -4,4 +4,8 @@ set -e
 DIR=$(cd $(dirname "$0") && pwd)
 
 set -x
-(cd "$DIR/../" && ./gradlew "{{service_name}}-service:bootRun")
+source $DIR/{{service_name}}-service-image-settings.sh
+
+docker tag $TAG_CURRENT $TAG_LATEST
+
+docker push $TARGET

@@ -1,8 +1,7 @@
+{{#define "service_name"}}{{hyphen service.identifier}}{{/define}}
 #!/usr/bin/env bash
 set -e
 DIR=$(cd $(dirname "$0") && pwd)
 
 set -x
-(cd "$DIR/../" && ./gradlew "{{hyphen service.identifier}}-service:generateJooqDsl")
-
-
+(cd "$DIR/../" && ./gradlew "{{service_name}}-service:generateJooqDsl")
