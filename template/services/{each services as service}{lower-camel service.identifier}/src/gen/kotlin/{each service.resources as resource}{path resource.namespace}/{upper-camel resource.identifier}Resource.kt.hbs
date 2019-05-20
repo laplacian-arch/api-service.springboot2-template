@@ -17,6 +17,6 @@ interface {{upper-camel resource.identifier}}Resource {
     /**
      * {{operation.description}}
      */
-    fun getDecks(request: Mono<{{> REQUEST_PAYLOAD_NAME}}>): Mono<{{> RESPONSE_PAYLOAD_NAME}}>
+    fun {{lower-camel operation.name}}(request: Mono<{{> REQUEST_PAYLOAD_NAME}}>): Mono<{{> RESPONSE_PAYLOAD_NAME}}>
     {{/each}}
 }
