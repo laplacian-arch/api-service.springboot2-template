@@ -32,7 +32,7 @@ class {{entity.class_name}}Resolver(
         context
         .getDataLoader<{{entity_name}}, {{entity_name}}>(BY_PK)
         .load(self)
-        .thenApply<{{class_name}}>{ it.{{property.property_name}} }
+        .thenApply<{{property.class_name}}>{ it.{{property.property_name}} }
     {{/unless}}
     {{/each}}
 
