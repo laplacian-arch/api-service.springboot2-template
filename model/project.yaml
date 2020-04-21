@@ -1,22 +1,16 @@
 project:
   group: laplacian-arch
-  name: template.service-api.springboot2
+  name: service-api.springboot2-template
   type: template
-  namespace: laplacian_arch.template_service_api_springboot2
+  namespace: laplacian_arch.service_api_springboot2_template
   version: '1.0.0'
   description: |
-    This template gives a service api implementation based on the [service-api](https://github.com/nabla-squared/laplacian-arch.model.service-api) model.
+    This template gives a service api implementation based on the [service-api](https://github.com/nabla-squared/laplacian-arch.service-api.schema-model/) model.
     The architecture stack which is employed in this template is:
       - Alpine based docker image
       - OpenJDK8
       - SpringBoot 2
       - Java-Graphql
   source_repository:
-    url: https://github.com/nabla-squared/laplacian-arch.template.service-api.springboot2.git
+    url: https://github.com/nabla-squared/laplacian-arch.service-api.springboot2-template.git
     branch: master
-  subprojects: []
-  schemas: []
-  templates: []
-  models: []
-  model_files: []
-  template_files: []
