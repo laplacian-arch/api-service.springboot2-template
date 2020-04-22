@@ -51,11 +51,15 @@ project:
 
 [model/project.yaml](<./model/project.yaml>)
 
-[src/dest/build.gradle](<./src/dest/build.gradle>)
-
 [src/dest/{each services as service}{hyphen service.name}/build.gradle.kts.hbs](<./src/dest/{each services as service}{hyphen service.name}/build.gradle.kts.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/gradle.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/gradle.properties.hbs>)
+
+[src/dest/{each services as service}{hyphen service.name}/gradlew](<./src/dest/{each services as service}{hyphen service.name}/gradlew>)
+
+[src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar](<./src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar>)
+
+[src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties](<./src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties>)
 
 [src/dest/{each services as service}{hyphen service.name}/settings.gradle.kts.hbs](<./src/dest/{each services as service}{hyphen service.name}/settings.gradle.kts.hbs>)
 
@@ -105,21 +109,19 @@ project:
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs>)
 
-[src/dest/scripts/{each services as service}{hyphen service.name}/bootrun.sh.hbs](<./src/dest/scripts/{each services as service}{hyphen service.name}/bootrun.sh.hbs>)
+[src/scripts/{each services as service}{hyphen service.name}/bootrun.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/bootrun.sh.hbs>)
 
-[src/dest/scripts/{each services as service}{hyphen service.name}/container_image/Dockerfile](<./src/dest/scripts/{each services as service}{hyphen service.name}/container_image/Dockerfile>)
+[src/scripts/{each services as service}{hyphen service.name}/container_image/Dockerfile](<./src/scripts/{each services as service}{hyphen service.name}/container_image/Dockerfile>)
 
-[src/dest/scripts/{each services as service}{hyphen service.name}/container-image-build.sh.hbs](<./src/dest/scripts/{each services as service}{hyphen service.name}/container-image-build.sh.hbs>)
+[src/scripts/{each services as service}{hyphen service.name}/container-image-build.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/container-image-build.sh.hbs>)
 
-[src/dest/scripts/{each services as service}{hyphen service.name}/container_image/entrypoint.sh](<./src/dest/scripts/{each services as service}{hyphen service.name}/container_image/entrypoint.sh>)
+[src/scripts/{each services as service}{hyphen service.name}/container_image/entrypoint.sh](<./src/scripts/{each services as service}{hyphen service.name}/container_image/entrypoint.sh>)
 
-[src/dest/scripts/{each services as service}{hyphen service.name}/container-image-push.sh.hbs](<./src/dest/scripts/{each services as service}{hyphen service.name}/container-image-push.sh.hbs>)
+[src/scripts/{each services as service}{hyphen service.name}/container-image-push.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/container-image-push.sh.hbs>)
 
-[src/dest/scripts/{each services as service}{hyphen service.name}/container-image-settings.sh.hbs](<./src/dest/scripts/{each services as service}{hyphen service.name}/container-image-settings.sh.hbs>)
+[src/scripts/{each services as service}{hyphen service.name}/container-image-settings.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/container-image-settings.sh.hbs>)
 
-[src/dest/scripts/{each services as service}{hyphen service.name}/jooqgen.sh.hbs](<./src/dest/scripts/{each services as service}{hyphen service.name}/jooqgen.sh.hbs>)
-
-[src/dest/settings.gradle.hbs](<./src/dest/settings.gradle.hbs>)
+[src/scripts/{each services as service}{hyphen service.name}/jooqgen.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/jooqgen.sh.hbs>)
 
 
 
