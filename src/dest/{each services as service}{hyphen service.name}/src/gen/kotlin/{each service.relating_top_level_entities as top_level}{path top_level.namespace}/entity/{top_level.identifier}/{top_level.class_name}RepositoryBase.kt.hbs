@@ -3,19 +3,20 @@
 package {{package}}
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
-import {{top_level.namespace}}.entity.db.tables.{{top_level.class_name}}
+import {{service.namespace}}.entity.db.tables.{{top_level.class_name}}
 {{#each top_level.relating_entities as |e|}}
-import {{e.namespace}}.entity.db.tables.{{e.class_name}}
+import {{service.namespace}}.entity.db.tables.{{e.class_name}}
 {{/each}}
-import {{project.namespace}}.util.*
+import {{service.namespace}}.util.*
 import org.jooq.DSLContext
 import org.jooq.impl.DSL.row
 import org.springframework.stereotype.Component
 import java.util.concurrent.CompletableFuture
-@Component
+
 /**
  * An implementation of the {{repository_name}}.
  */
+@Component
 class {{repository_name}}Base(
     private val dsl: DSLContext
 ): {{repository_name}} {

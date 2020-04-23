@@ -1,12 +1,12 @@
 {{#define "entity_name"}}{{entity.class_name}}Entity{{/define}}
 {{#define "repository_name"}}{{top_level.class_name}}Repository{{/define}}
-{{#define "package"}}{{top_level.namespace}}.entity.{{top_level.identifier}}{{/define}}
+{{#define "package"}}{{top_level.namespace}}.entity.{{lower-underscore top_level.name}}{{/define}}
 {{#define "lname"}}{{lower-camel entity.identifier}}{{/define}}
 package {{package}}
 import com.coxautodev.graphql.tools.GraphQLResolver
 import graphql.schema.DataFetchingEnvironment
 {{#each entity.relating_top_level_entities as |relating_entity|}}
-{{#define "rel_namespace"}}{{relating_entity.namespace}}.entity.{{lower-camel relating_entity.identifier}}{{/define}}
+{{#define "rel_namespace"}}{{relating_entity.namespace}}.entity.{{lower-underscore relating_entity.name}}{{/define}}
 import {{rel_namespace}}.{{relating_entity.class_name}}Entity
 import {{rel_namespace}}.{{relating_entity.class_name}}Resolver
 {{/each}}
@@ -69,7 +69,7 @@ class {{entity.class_name}}Resolver(
         {{define "ref_entity" relationship.reference_entity}}
         registry.register({{upper-underscore relationship.property_name}}, DataLoader.newMappedDataLoader<{{entity_name}}, List<{{ref_entity.class_name}}Entity>> { keys ->
             {{lname}}Repository
-                .load{{upper-camel relationship.property_name}}OfDeckAsync(keys)
+                .load{{upper-camel relationship.property_name}}Of{{entity.class_name}}Async(keys)
         })
         {{/if}}
         {{/each}}

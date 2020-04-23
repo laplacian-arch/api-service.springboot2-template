@@ -13,7 +13,7 @@ import {{entity_package}}.{{aggregate.reference_entity.class_name}}Resolver
 {{/each}}
 {{/each}}
 {{#each service.relating_top_level_entities as |top_level|}}
-import {{top_level.namespace}}.entity.db.tables.records.{{top_level.class_name}}Record
+import {{service.namespace}}.entity.db.tables.records.{{top_level.class_name}}Record
 {{/each}}
 import org.dataloader.DataLoaderRegistry
 import org.springframework.context.annotation.Bean
@@ -83,9 +83,12 @@ class Endpoint(
     }
 
     fun dataloaderRegistry() = DataLoaderRegistry().also {
-        deckResolver.registerLoader(it)
-        cardEntryResolver.registerLoader(it)
-        cardResolver.registerLoader(it)
+        {{#each service.relating_top_level_entities as |top_level|}}
+        {{lower-camel top_level.identifier}}Resolver.registerLoader(it)
+        {{#each top_level.aggregates as |aggregate|}}
+        {{lower-camel aggregate.reference_entity.identifier}}Resolver.registerLoader(it)
+        {{/each}}
+        {{/each}}
     }
 
     fun processGraphQl(request: ServerRequest): Mono<ServerResponse> = graphqlOptionFromBody(request).flatMap { params ->

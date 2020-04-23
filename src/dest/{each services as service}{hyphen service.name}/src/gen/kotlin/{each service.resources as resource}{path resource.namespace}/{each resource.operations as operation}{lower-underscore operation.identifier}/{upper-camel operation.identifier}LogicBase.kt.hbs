@@ -5,13 +5,7 @@
 package {{operation.namespace}}
 
 {{#each operation.relating_entities as |e|}}
-{{#define "package"}}{{#trim}}
-{{#if e.inherited_from}}
-{{lower-camel e.inherited_from.[0].reference_entity.identifier}}
-{{else}}
-{{lower-camel e.identifier}}
-{{/if}}
-{{/trim}}{{/define}}
+{{define "package" (lower-underscore (if e.owner e.owner.identifier e.identifier))}}
 import {{e.namespace}}.entity.{{package}}.{{e.class_name}}Entity
 {{/each}}
 import org.springframework.stereotype.Component
@@ -28,10 +22,15 @@ class {{logic_interface_name}}Base: {{logic_interface_name}} {
             {{#define "entity_var_name"}}{{lower-camel entity.identifier}}{{/define}}
             {{target}}.{{item_var_name}} = {{#if multiple}}listOf({{/if}}
                 {{entity.class_name}}Entity().also { {{entity_var_name}} ->
-                    {{#each entity.stored_properties as |p|}}
+                    {{#if entity.owner ~}}
+                    {{#each entity.owner.primary_keys as |pk| ~}}
+                    {{entity_var_name}}.{{entity.owned_by.property_name}}{{upper-camel pk.property_name}} = {{pk.example_value}}
+                    {{/each}}
+                    {{/if}}
+                    {{#each entity.stored_properties as |p| ~}}
                     {{entity_var_name}}.{{p.property_name}} = {{p.example_value}}
                     {{/each}}
-                    {{#each entity.stored_relationships as |r|}}
+                    {{#each entity.stored_relationships as |r| ~}}
                     {{#shift width=8}}{{> ENTITY_ITEM entity=r.reference_entity multiple=r.multiple target=entity_var_name item_var_name=r.property_name}}{{/shift}}
                     {{/each}}
                 }

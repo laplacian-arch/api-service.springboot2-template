@@ -6,7 +6,7 @@ import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
 {{#each service.relating_top_level_entities as |top_level|}}
 import {{top_level.namespace}}.entity.{{lower-underscore top_level.identifier}}.{{top_level.class_name}}Entity
-import {{top_level.namespace}}.entity.db.tables.{{top_level.class_name}}
+import {{service.namespace}}.entity.db.tables.{{top_level.class_name}}
 {{/each}}
 import org.jooq.DSLContext
 import org.springframework.stereotype.Component

@@ -83,11 +83,9 @@ project:
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs>)
 
-[src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path project.namespace}/util/{if data_accesses.contains_jooq_scripts}JooqUtil.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path project.namespace}/util/{if data_accesses.contains_jooq_scripts}JooqUtil.kt.hbs>)
+[src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/WebApiConfiguration.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/WebApiConfiguration.kt.hbs>)
-
-[src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/{if data_accesses.contains_jooq_scripts}JooqConfiguration.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/{if data_accesses.contains_jooq_scripts}JooqConfiguration.kt.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs>)
 
@@ -96,6 +94,8 @@ project:
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/{upper-camel service.identifier}Application.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/{upper-camel service.identifier}Application.kt.hbs>)
+
+[src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/util/JooqUtil.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/util/JooqUtil.kt.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs>)
 

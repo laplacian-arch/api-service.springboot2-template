@@ -10,7 +10,15 @@ import org.springframework.transaction.annotation.EnableTransactionManagement
  * The launcher class for the {{service.name}} service.
  */
 @SpringBootApplication
-@ComponentScan(basePackages = [{{> CLASS_NAME}}.COMPONENT_SCAN_ROOT])
+@ComponentScan(basePackages = [
+    {{#each (unique (map service.resources 'namespace')) as |resource_ns|~}}
+    "{{resource_ns}}",
+    {{/each}}
+    {{#each (unique (map service.relating_top_level_entities 'namespace')) as |entity_ns|~}}
+    "{{entity_ns}}",
+    {{/each}}
+    "{{service.namespace}}"
+])
 @EnableTransactionManagement
 class {{> CLASS_NAME}} {
     companion object {

@@ -13,7 +13,7 @@ import {{entity.namespace}}.entity.{{lower-underscore entity.identifier}}.{{enti
 class {{response_class_name}} {
     {{#each operation.response_body as |item|}}
     {{#if item.entity}}
-    var {{lower-camel item.identifier}}: {{> TYPE_OF_ITEM}}{{#if item.multiple}} = emptyList(){{/if}}
+    var {{lower-camel item.identifier}}: {{> TYPE_OF_ITEM}}{{#if item.multiple}} = emptyList(){{else}}? = null{{/if}}
     {{else}}
     {{/if}}
     {{/each}}
