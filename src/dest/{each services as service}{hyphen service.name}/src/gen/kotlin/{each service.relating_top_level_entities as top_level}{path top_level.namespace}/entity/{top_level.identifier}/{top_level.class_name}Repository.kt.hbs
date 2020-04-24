@@ -15,8 +15,8 @@ interface {{repository_name}} {
     {{#define "loader_method_name"}}load{{upper-camel plural_name}}{{/define}}
     {{#define "fqn"}}{{entity.fqn}}{{/define}}
 
-    {{#each data_accesses as |data_access|}}
-    {{#if (eq data_access.entity.fqn fqn)}}
+    {{#each data_accesses as |data_access| ~}}
+    {{#if (eq data_access.entity.fqn fqn) ~}}
     {{#define "method_name"}}{{lower-camel data_access.identifier}}{{/define}}
     /**
      * {{trim data_access.description}}
@@ -40,8 +40,8 @@ interface {{repository_name}} {
      */
     fun {{loader_method_name}}Async(keys: {{entity_set}}): CompletableFuture<{{entity_set}}>
 
-    {{#each entity.stored_relationships as |r|}}
-    {{#if r.multiple}}
+    {{#each entity.stored_relationships as |r| ~}}
+    {{#if r.multiple ~}}
     {{#define "reference_entity_class_name"}}{{r.reference_entity.class_name}}Entity{{/define}}
     {{#define "loader_method_name"}}load{{upper-camel r.property_name}}Of{{upper-camel entity.name}}{{/define}}
     /**
@@ -58,7 +58,7 @@ interface {{repository_name}} {
 
 
 {{/inline}}
-    {{#each top_level.aggregated_entities as |entity|}}
+    {{#each top_level.aggregated_entities as |entity| ~}}
     {{> METHOD_DEFINITION_FOR_AN_ENTITY entity=entity}}
     {{/each}}
 }

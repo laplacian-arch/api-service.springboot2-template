@@ -12,14 +12,14 @@
 # {{trim entity.description}}
 #
 type {{entity.class_name}} {
-  {{#each entity.stored_properties as |p|}}
+  {{#each entity.stored_properties as |p| ~}}
   #
   # {{trim p.description}}
   #
   {{lower-camel p.identifier}}: {{>TYPE_OF_PEROPETY property = p}}
   {{/each}}
 
-  {{#each entity.stored_relationships as |r|}}
+  {{#each entity.stored_relationships as |r| ~}}
   #
   # {{trim r.description}}
   #

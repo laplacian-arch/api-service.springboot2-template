@@ -6,11 +6,9 @@
 
 package {{service.namespace}}.controller
 import reactor.core.publisher.Mono
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import {{resource.namespace}}.{{> RESOURCE_CLASS_NAME}}
-{{#each resource.operations as |operation|}}
+{{#each resource.operations as |operation| ~}}
 import {{operation.namespace}}.{{> OPERATION_REQUEST_CLASS}}
 import {{operation.namespace}}.{{> OPERATION_RESPONSE_CLASS}}
 {{/each}}
@@ -18,11 +16,12 @@ import {{operation.namespace}}.{{> OPERATION_RESPONSE_CLASS}}
 /**
  * The rest controller of the {{resource.name}} resource.
  */
+@CrossOrigin
 @RestController
 class {{upper-camel resource.identifier}}Controller (
     val {{> RESOURCE_OBJECT_NAME}}: {{> RESOURCE_CLASS_NAME}}
 ) {
-    {{#each resource.operations as |operation|}}
+    {{#each resource.operations as |operation| ~}}
     @RequestMapping(
         path = [ "{{service.path}}/{{service.api_version}}{{resource.path}}{{operation.path}}" ],
         method = [ RequestMethod.{{operation.method}} ]

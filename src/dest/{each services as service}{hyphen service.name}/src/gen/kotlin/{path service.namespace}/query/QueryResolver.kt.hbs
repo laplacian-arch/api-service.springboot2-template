@@ -1,7 +1,7 @@
 {{#define "package"}}{{service.namespace}}.query{{/define}}
 package {{package}}
 
-import com.coxautodev.graphql.tools.GraphQLQueryResolver
+import graphql.kickstart.tools.GraphQLQueryResolver
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
 {{#each service.relating_top_level_entities as |top_level|}}
@@ -17,12 +17,12 @@ class QueryResolver(
     val dsl: DSLContext
 ): GraphQLQueryResolver {
 
-    {{#each service.relating_top_level_entities as |top_level|}}
+    {{#each service.relating_top_level_entities as |top_level| ~}}
     {{#define "entity_name"}}{{top_level.identifier}}{{/define}}
     val {{lower-camel entity_name}}: {{upper-camel entity_name}} = {{upper-camel entity_name}}.{{upper-underscore entity_name}}
     {{/each}}
 
-    {{#each service.relating_top_level_entities as |top_level|}}
+    {{#each service.relating_top_level_entities as |top_level| ~}}
     fun {{lower-camel (plural top_level.identifier)}}(): CompletableFuture<List<{{top_level.class_name}}Entity>> = runBlocking { future {
         dsl
         .select()

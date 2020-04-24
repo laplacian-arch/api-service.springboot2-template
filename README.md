@@ -51,9 +51,9 @@ project:
 
 [model/project.yaml](<./model/project.yaml>)
 
-[src/dest/{each services as service}{hyphen service.name}/build.gradle.kts.hbs](<./src/dest/{each services as service}{hyphen service.name}/build.gradle.kts.hbs>)
+[src/dest/{each services as service}{hyphen service.name}/application.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/application.properties.hbs>)
 
-[src/dest/{each services as service}{hyphen service.name}/gradle.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/gradle.properties.hbs>)
+[src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs](<./src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/gradlew](<./src/dest/{each services as service}{hyphen service.name}/gradlew>)
 
@@ -61,7 +61,7 @@ project:
 
 [src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties](<./src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties>)
 
-[src/dest/{each services as service}{hyphen service.name}/settings.gradle.kts.hbs](<./src/dest/{each services as service}{hyphen service.name}/settings.gradle.kts.hbs>)
+[src/dest/{each services as service}{hyphen service.name}/settings.gradle.hbs](<./src/dest/{each services as service}{hyphen service.name}/settings.gradle.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Entity.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Entity.kt.hbs>)
 
@@ -83,13 +83,11 @@ project:
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs>)
 
+[src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/GraphqlContextBuilder.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/GraphqlContextBuilder.kt.hbs>)
+
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs>)
 
-[src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/WebApiConfiguration.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/WebApiConfiguration.kt.hbs>)
-
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs>)
-
-[src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/Endpoint.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/Endpoint.kt.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs>)
 
@@ -100,10 +98,6 @@ project:
 [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs>)
-
-[src/dest/{each services as service}{hyphen service.name}/src/gen/resources/graphiql.html](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/graphiql.html>)
-
-[src/dest/{each services as service}{hyphen service.name}/src/gen/resources/index.html.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/index.html.hbs>)
 
 [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml>)
 

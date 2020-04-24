@@ -17,7 +17,9 @@ generate() {
 
 start_service() {
   (cd $SERVICE_BASE_DIR
-    ./gradlew generateJooqDsl bootrun --stacktrace
+    ./gradlew --stacktrace \
+      generate{{upper-camel service.datasource.name}}JooqSchemaSource \
+      bootrun
   )
 }
 
