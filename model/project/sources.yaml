@@ -4,6 +4,8 @@ project:
   - ".editorconfig"
   - ".gitattributes"
   - ".gitignore"
+  - "model/project/scripts/generate.yaml"
+  - "model/project/scripts/publish-local.yaml"
   - "model/project/sources.yaml"
   - "model/project.yaml"
   - "src/dest/{each services as service}{hyphen service.name}/application.properties.hbs"

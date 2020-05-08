@@ -9,27 +9,27 @@ The architecture stack which is employed in this template is:
   - Java-Graphql
 
 
-*Read this in other languages*: [[日本語](README_ja.md)] [[简体中文](README_zh.md)]
+*Read this in other languages*: [[English](README.md)] [[简体中文](README_zh.md)]
 <!-- @head-content@ -->
 
 <!-- @toc@ -->
 ## Table of contents
-- [Usage](#usage)
+- [使用方法](#使用方法)
 
-- [Index](#index)
+- [インデックス](#インデックス)
 
-  * [Script List](#script-list)
+  * [スクリプト一覧](#スクリプト一覧)
 
-  * [Source code list](#source-code-list)
+  * [ソースコード一覧](#ソースコード一覧)
 
 
 
 <!-- @toc@ -->
 
 <!-- @main-content@ -->
-## Usage
+## 使用方法
 
-To apply this Template module, add the following entry to your project definition.
+この templateモジュールを適用するには、プロジェクト定義に以下のエントリを追加してください。
 ```yaml
 project:
   templates:
@@ -38,7 +38,8 @@ project:
     version: 1.0.0
 ```
 
-You can run the following command to see a list of resources affected by the application of this module and their contents.
+下記のコマンドを実行すると、このモジュールの適用によって影響を受ける資源の一覧とその内容を確認できます。
+
 ```console
 $ ./script/generate --dry-run
 
@@ -49,109 +50,103 @@ diff --color -r PROJECT_HOME/.NEXT/somewhere/something.md PROJECT_HOME/somewhere
 > content: NEW CONTENT
 ```
 
-If there is no problem, execute the following command to reflect the change.
+内容に問題が無ければ、下記コマンドを実行して変更を反映してください。
+
 ```console
 $ ./script/generate
 
 ```
 
 
-## Index
+## インデックス
 
 
-### Script List
+### スクリプト一覧
 
 
 - [./script/generate.sh](<./scripts/generate.sh>)
 
-  Generates The resources in each directory of `src/` `model/` `template/` in this project.
-  The results are reflected in each directory of `dest/` `doc/` `script/`.
+  このプロジェクト内の資源を自動生成します。
+  `src/` `model/` `template/` の各ディレクトリに格納された資源をもとに自動生成を行い、その結果を`dest/` `doc/` `script/` の各ディレクトリに反映します。
 
-  *Generator input files*
+  *自動生成入力ファイル*
 
   - `src/`
-    Stores static resources that are not processed the generator.
-    The contents of this directory are copied directly into the `dest/` directory.
+    自動生成の対象とならない静的な資源を格納します。
+    このディレクトリの内容は `dest/` 配下にそのままコピーされます。
 
   - `model/`
-    Stores the static model data files written in *YAML* or *JSON* format used for the generation.
+    自動生成で使用されるYAMLもしくはJSON形式で記述された静的なモデルデータを格納します。
 
   - `template/`
-    This directory contains the template files used for the generation.
-    Files with a extension `.hbs` will be handled as templates. All other files are copied as is.
+    自動生成で使用されるテンプレートファイルを格納します。ファイル拡張子に `.hbs` を含むファイルがテンプレートして扱われます。
+    それ以外のファイルはそのままコピーされます。
 
     - `template/dest` `template/doc` `template/scripts`
-      Each of these directories contains the template files of the resource to be output
-      in the directory `dest/` `doc/` `scripts`.
+      これらのディレクトリはそれぞれ、`dest/` `doc/` `scripts`の各ディレクトリに出力される資源のテンプレートを格納します。
 
     - `template/model` `template/template`
-      These directories store template files updating the contents of `template/` and `model/` used for the generation.
-      If the content of `template/` `model/` is updated as a result of the generation,
-      the generation process is executed recursively.
-      The changes to `template/` `model/` that occur during the above process are treated as an intermediate state
-      and will be lost after the completion of the process.
-      Use the *--dry-run* option to check these intermediate files.
+      自動生成で使用される`template/` `model/`の内容を更新するためのテンプレートを格納します。
+      自動生成の結果、`template/` `model/` の内容が更新された場合は、自動生成処理を再帰的に実行します。
+      なお、上記処理中に発生した`template/` `model/`への変更は、中間状態として扱われるため、処理完了後は失われます。
+      これらの中間ファイルを確認するためには *--dry-run* オプションを使用してください。
 
-  *Generator output files*
+  *自動生成結果ファイル*
 
   - `dest/`
-    Outputs the source files of applications and modules created as the result of
-    the generation process.
+    自動生成の結果作成されるアプリケーションやモジュールのソースファイル等を出力します。
 
   - `doc/`
-    Outputs the project documentation.
+    プロジェクトのドキュメントを出力します。
 
   - `scripts/`
-    Outputs various scripts used in development and operation.
+    開発・運用で使用する各種スクリプトを出力します。
 
   > Usage: generate.sh [OPTION]...
   >
   > -h, --help
   >
-  >   Displays how to use this command.
+  >   このコマンドの使用方法を表示します。
   >   
   > -v, --verbose
   >
-  >   Displays more detailed command execution information.
+  >   より詳細なコマンドの実行情報を表示します。
   >   
   > -d, --dry-run
   >
-  >   After this command is processed, the generated files are output to the `.NEXT` directory
-  >   without reflecting to the folders of `dest/` `doc/` `scripts/`.
-  >   In addition, the difference between the contents of the `.NEXT` directory and the current files.
-  >   This directory also contains any intermediate files created during the generation.
+  >   自動生成処理を実行後、生成されたファイルを`dest/` `doc/` `scripts/`の各フォルダに反映せずに、`.NEXT`ディレクトリに出力します。
+  >   また、`.NEXT`ディレクトリの内容と現在のファイルの差異を出力します。
+  >   このディレクトリには自動生成中に作成された中間ファイルも含まれます。
   >   
   > -r, --max-recursion [VALUE]
   >
-  >   The upper limit of the number of times to execute recursively
-  >   when the contents of the `model/` `template/` directory are updated
-  >   during the generation process.
+  >   自動生成処理中に`model/` `template/`ディレクトリの内容が更新された場合に、
+  >   再帰的に自動生成処理を実行する回数の上限。
   >    (Default: 10)
 - [./script/publish-local.sh](<./scripts/publish-local.sh>)
 
-  After the resources in the project are generated,
-  the resources in the `./dest` directory are built as a template module
-  and registered in the local repository.
+  プロジェクト内の資源を自動生成した後、ディレクトリにある資源をテンプレートモジュールとしてビルドし、
+  ローカルリポジトリに登録します。
 
   > Usage: publish-local.sh [OPTION]...
   >
   > -h, --help
   >
-  >   Displays how to use this command.
+  >   このコマンドの使用方法を表示します。
   >   
   > -v, --verbose
   >
-  >   Displays more detailed command execution information.
+  >   より詳細なコマンドの実行情報を表示します。
   >   
   > -r, --max-recursion [VALUE]
   >
-  >   This option is the same as the option of the same name in [generate.sh](<./scripts/generate.sh>).
+  >   [generate.sh](<./scripts/generate.sh>)の同名のオプションと同じものです。
   >    (Default: 10)
   > , --skip-generation
   >
-  >   This option is the same as the option of the same name in [generate.sh](<./scripts/generate.sh>).
+  >   自動生成処理を行わずに、ビルドおよびローカルリポジトリへの登録を行います。
   >   
-### Source code list
+### ソースコード一覧
 
 
 - [model/project/scripts/generate.yaml](<./model/project/scripts/generate.yaml>)

@@ -11,10 +11,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement
  */
 @SpringBootApplication
 @ComponentScan(basePackages = [
-    {{#each (unique (map service.resources 'namespace')) as |resource_ns|~}}
+    {{#each (unique (map service.resources '@it.namespace')) as |resource_ns|~}}
     "{{resource_ns}}",
     {{/each}}
-    {{#each (unique (map service.relating_top_level_entities 'namespace')) as |entity_ns|~}}
+    {{#each (unique (map service.relating_top_level_entities '@it.namespace')) as |entity_ns|~}}
     "{{entity_ns}}",
     {{/each}}
     "{{service.namespace}}"

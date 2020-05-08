@@ -3,79 +3,73 @@ set -e
 PROJECT_BASE_DIR=$(cd $"${BASH_SOURCE%/*}/../" && pwd)
 
 SCRIPT_BASE_DIR="$PROJECT_BASE_DIR/scripts"
+
 LOCAL_REPO_PATH="$PROJECT_BASE_DIR/../mvn-repo"
 if [[ -d "$PROJECT_BASE_DIR/subprojects/mvn-repo" ]]
 then
   LOCAL_REPO_PATH="$PROJECT_BASE_DIR/subprojects/mvn-repo"
 fi
-PROJECT_MODEL_DIR="$PROJECT_BASE_DIR/model/project"
-PROJECT_SOURCE_INDEX="$PROJECT_MODEL_DIR/sources.yaml"
 
-DEST_DIR="$PROJECT_BASE_DIR/dest"
-SRC_DIR="$PROJECT_BASE_DIR/src"
+OPT_NAMES='hvdr:-:'
 
-main() {
-  create_dest_dir
-  create_file_index
-  generate
+HELP=
+VERBOSE=
+DRY_RUN=
+MAX_RECURSION=10
+
+
+run_generate() {
+  parse_args "$@"
+  ! [ -z $VERBOSE ] && set -x
+  ! [ -z $HELP ] && show_usage && exit 0
+  main
 }
 
-create_dest_dir() {
-  mkdir -p $DEST_DIR
-  rm -rf $DEST_DIR
-  if [ -d $SRC_DIR ]
-  then
-    cp -rf $SRC_DIR $DEST_DIR
-  else
-    mkdir -p $DEST_DIR
-  fi
-}
-
-normalize_path () {
-  local path=$1
-  if [[ $path == ./* ]]
-  then
-    echo "${PROJECT_BASE_DIR}/$path"
-  else
-    echo $path
-  fi
-}
-
-create_file_index() {
-  mkdir -p $PROJECT_MODEL_DIR
-  cat <<EOF > $PROJECT_SOURCE_INDEX
-project:
-  sources:$(file_list | sort -d)
-EOF
-}
-
-file_list() {
-  local separator="\n  - "
-  (cd $PROJECT_BASE_DIR
-    find . -type d \( \
-      -path './scripts' -o -path './.git' -o -path './dest' -o -path './subprojects' \
-    \) -prune -o -type f -print
-  ) | while read -r file
+parse_args() {
+  while getopts $OPT_NAMES OPTION;
   do
-    printf "$separator\"${file:2}\""
+    case $OPTION in
+    -)
+      case $OPTARG in
+      help)
+        HELP='yes';;
+      verbose)
+        VERBOSE='yes';;
+      dry-run)
+        DRY_RUN='yes';;
+      max-recursion)
+        MAX_RECURSION=("${!OPTIND}"); OPTIND=$(($OPTIND+1));;
+      *)
+        echo "ERROR: Unknown OPTION --$OPTARG" >&2
+        exit 1
+      esac
+      ;;
+    h) HELP='yes';;
+    v) VERBOSE='yes';;
+    d) DRY_RUN='yes';;
+    r) MAX_RECURSION=("${!OPTIND}"); OPTIND=$(($OPTIND+1));;
+    esac
   done
-  printf "\n"
 }
 
-#
-# Generate resources for service-api.springboot2-template project.
-#
-generate() {
-  ${SCRIPT_BASE_DIR}/laplacian-generate.sh \
-    --plugin 'laplacian:laplacian.project.schema-plugin:1.0.0' \
-    --template 'laplacian:laplacian.project.base-template:1.0.0' \
-    --model 'laplacian:laplacian.project.project-types:1.0.0' \
-    --model 'laplacian:laplacian.project.document-content:1.0.0' \
-    --model-files $(normalize_path 'model/project.yaml') \
-    --model-files $(normalize_path 'model/project/') \
-    --template-files $(normalize_path 'template/') \
-    --target-dir ./ \
-    --local-repo "$LOCAL_REPO_PATH"
+show_usage () {
+cat << END
+Usage: $(basename "$0") [OPTION]...
+  -h, --help
+    Displays how to use this command.
+  -v, --verbose
+    Displays more detailed command execution information.
+  -d, --dry-run
+    After this command is processed, the generated files are output to the `.NEXT` directory
+    without reflecting to the folders of `dest/` `doc/` `scripts/`.
+    In addition, the difference between the contents of the `.NEXT` directory and the current files.
+    This directory also contains any intermediate files created during the generation.
+  -r, --max-recursion [VALUE]
+    The upper limit of the number of times to execute recursively
+    when the contents of the `model/` `template/` directory are updated
+    during the generation process. (Default: 10)
+END
 }
 
-main
+source $SCRIPT_BASE_DIR/.generate/main.sh
+run_generate "$@"

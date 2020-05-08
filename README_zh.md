@@ -9,27 +9,28 @@ The architecture stack which is employed in this template is:
   - Java-Graphql
 
 
-*Read this in other languages*: [[日本語](README_ja.md)] [[简体中文](README_zh.md)]
+*Read this in other languages*: [[English](README.md)] [[日本語](README_ja.md)]
 <!-- @head-content@ -->
 
 <!-- @toc@ -->
 ## Table of contents
-- [Usage](#usage)
+- [如何使用](#如何使用)
 
-- [Index](#index)
+- [索引](#索引)
 
-  * [Script List](#script-list)
+  * [命令列表](#命令列表)
 
-  * [Source code list](#source-code-list)
+  * [源码列表](#源码列表)
 
 
 
 <!-- @toc@ -->
 
 <!-- @main-content@ -->
-## Usage
+## 如何使用
 
-To apply this Template module, add the following entry to your project definition.
+要应用此template模块，请在项目定义中加入以下条目
+
 ```yaml
 project:
   templates:
@@ -38,7 +39,8 @@ project:
     version: 1.0.0
 ```
 
-You can run the following command to see a list of resources affected by the application of this module and their contents.
+您可以运行以下命令查看受本模块应用影响的资源列表及其内容
+
 ```console
 $ ./script/generate --dry-run
 
@@ -49,109 +51,102 @@ diff --color -r PROJECT_HOME/.NEXT/somewhere/something.md PROJECT_HOME/somewhere
 > content: NEW CONTENT
 ```
 
-If there is no problem, execute the following command to reflect the change.
+如果没有问题，请执行下面的命令来反映变化
+
 ```console
 $ ./script/generate
 
 ```
 
 
-## Index
+## 索引
 
 
-### Script List
+### 命令列表
 
 
 - [./script/generate.sh](<./scripts/generate.sh>)
 
-  Generates The resources in each directory of `src/` `model/` `template/` in this project.
-  The results are reflected in each directory of `dest/` `doc/` `script/`.
+  生成本项目中每个`src/` `model/` `template/`目录下的资源。
+  结果反映在`dest/` `doc/` `script/`的每个目录中。
 
-  *Generator input files*
+  *生成器输入文件*
 
   - `src/`
-    Stores static resources that are not processed the generator.
-    The contents of this directory are copied directly into the `dest/` directory.
+    存储未被生成器处理的静态资源。
+    这个目录的内容直接复制到`dest/`目录中。
 
   - `model/`
-    Stores the static model data files written in *YAML* or *JSON* format used for the generation.
+    存储以 *YAML* 或 *JSON* 格式编写的静态模型数据文件，用于生成。
 
   - `template/`
-    This directory contains the template files used for the generation.
-    Files with a extension `.hbs` will be handled as templates. All other files are copied as is.
+    这个目录中包含了用于生成的模板文件。
+    扩展名为`.hbs`的文件将作为模板处理。所有其他文件都会被复制。
 
     - `template/dest` `template/doc` `template/scripts`
-      Each of these directories contains the template files of the resource to be output
-      in the directory `dest/` `doc/` `scripts`.
+      这些目录中的每一个目录都包含要输出的资源的模板文件，其目录为 `dest/`doc/`scripts`。
 
     - `template/model` `template/template`
-      These directories store template files updating the contents of `template/` and `model/` used for the generation.
-      If the content of `template/` `model/` is updated as a result of the generation,
-      the generation process is executed recursively.
-      The changes to `template/` `model/` that occur during the above process are treated as an intermediate state
-      and will be lost after the completion of the process.
-      Use the *--dry-run* option to check these intermediate files.
+      这些目录存储模板文件，更新生成过程中使用的`template/`和`model/`的内容。
+      如果在生成过程中更新了 `template/` `model/` 的内容，则生成过程将递归执行。
+      在上述过程中发生的对 `template/` `model/` 的变化被视为中间状态，并在过程完成后丢失。
+      使用 *--dry-run* 选项来检查这些中间文件。
 
-  *Generator output files*
+  *生成器输出文件*
 
   - `dest/`
-    Outputs the source files of applications and modules created as the result of
-    the generation process.
+    输出作为生成过程的结果的应用程序和模块的源文件。
 
   - `doc/`
-    Outputs the project documentation.
+    输出项目文件。
 
   - `scripts/`
-    Outputs various scripts used in development and operation.
+    输出开发和操作中使用的各种脚本。
 
   > Usage: generate.sh [OPTION]...
   >
   > -h, --help
   >
-  >   Displays how to use this command.
+  >   显示如何使用此命令。
   >   
   > -v, --verbose
   >
-  >   Displays more detailed command execution information.
+  >   显示更详细的命令执行信息。
   >   
   > -d, --dry-run
   >
-  >   After this command is processed, the generated files are output to the `.NEXT` directory
-  >   without reflecting to the folders of `dest/` `doc/` `scripts/`.
-  >   In addition, the difference between the contents of the `.NEXT` directory and the current files.
-  >   This directory also contains any intermediate files created during the generation.
+  >   该命令处理完毕后，生成的文件将被输出到`.NEXT`目录下。
+  >   不反映到`dest/`doc/`doc/`scripts/`文件夹中。
+  >   此外，`.NEXT`目录的内容与当前文件之间的差异。
+  >   这个目录还包含了在生成过程中创建的任何中间文件。
   >   
   > -r, --max-recursion [VALUE]
   >
-  >   The upper limit of the number of times to execute recursively
-  >   when the contents of the `model/` `template/` directory are updated
-  >   during the generation process.
+  >   当`model/` `template/`目录的内容在生成过程中被更新时，递归执行的次数上限。
   >    (Default: 10)
 - [./script/publish-local.sh](<./scripts/publish-local.sh>)
 
-  After the resources in the project are generated,
-  the resources in the `./dest` directory are built as a template module
-  and registered in the local repository.
+  项目中的资源生成后，在`./dest`目录下的资源作为模板模块建立，并在本地资源库中注册。
 
   > Usage: publish-local.sh [OPTION]...
   >
   > -h, --help
   >
-  >   Displays how to use this command.
+  >   显示如何使用此命令。
   >   
   > -v, --verbose
   >
-  >   Displays more detailed command execution information.
+  >   显示更详细的命令执行信息。
   >   
   > -r, --max-recursion [VALUE]
   >
-  >   This option is the same as the option of the same name in [generate.sh](<./scripts/generate.sh>).
+  >   这个选项与[generate.sh](<./scripts/generate.sh>)中的同名选项相同。
   >    (Default: 10)
   > , --skip-generation
   >
-  >   This option is the same as the option of the same name in [generate.sh](<./scripts/generate.sh>).
+  >   这个选项与[generate.sh](<./scripts/generate.sh>)中的同名选项相同。
   >   
-### Source code list
+### 源码列表
 
 
 - [model/project/scripts/generate.yaml](<./model/project/scripts/generate.yaml>)
