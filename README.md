@@ -64,7 +64,7 @@ $ ./script/generate
 
 - [./script/generate.sh](<./scripts/generate.sh>)
 
-  Generates The resources in each directory of `src/` `model/` `template/` in this project.
+  Generates the resources in each directory of `src/` `model/` `template/` in this project.
   The results are reflected in each directory of `dest/` `doc/` `script/`.
 
   *Generator input files*
@@ -154,9 +154,6 @@ $ ./script/generate
 ### Source code list
 
 
-- [model/project/scripts/generate.yaml](<./model/project/scripts/generate.yaml>)
-- [model/project/scripts/publish-local.yaml](<./model/project/scripts/publish-local.yaml>)
-- [model/project/sources.yaml](<./model/project/sources.yaml>)
 - [model/project.yaml](<./model/project.yaml>)
 - [src/dest/{each services as service}{hyphen service.name}/application.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/application.properties.hbs>)
 - [src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs](<./src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs>)

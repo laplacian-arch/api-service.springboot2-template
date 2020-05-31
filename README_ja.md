@@ -149,9 +149,6 @@ $ ./script/generate
 ### ソースコード一覧
 
 
-- [model/project/scripts/generate.yaml](<./model/project/scripts/generate.yaml>)
-- [model/project/scripts/publish-local.yaml](<./model/project/scripts/publish-local.yaml>)
-- [model/project/sources.yaml](<./model/project/sources.yaml>)
 - [model/project.yaml](<./model/project.yaml>)
 - [src/dest/{each services as service}{hyphen service.name}/application.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/application.properties.hbs>)
 - [src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs](<./src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs>)
