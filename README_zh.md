@@ -1,12 +1,7 @@
 <!-- @head-content@ -->
-# laplacian-arch/service-api.springboot2-template
+# laplacian-arch/api-service.springboot2-template
 
-This template gives a service api implementation based on the [service-api](https://github.com/nabla-squared/laplacian-arch.service-api.schema-model/) model.
-The architecture stack which is employed in this template is:
-  - Alpine based docker image
-  - OpenJDK8
-  - SpringBoot 2
-  - Java-Graphql
+该模板基于[API服务模型](https://spring.io/projects/spring-boot)生成一个基于[SpringBoot2](https://github.com/nabla-squared/api-service.domain-model/)的运行时。
 
 
 *Read this in other languages*: [[English](README.md)] [[日本語](README_ja.md)]
@@ -35,7 +30,7 @@ The architecture stack which is employed in this template is:
 project:
   templates:
   - group: laplacian-arch
-    name: service-api.springboot2-template
+    name: api-service.springboot2-template
     version: 1.0.0
 ```
 
@@ -124,6 +119,16 @@ $ ./script/generate
   >
   >   当`model/` `template/`目录的内容在生成过程中被更新时，递归执行的次数上限。
   >    (Default: 10)
+  > , --local-module-repository [VALUE]
+  >
+  >   存储本地构建的模块的存储库路径。
+  >   这个存储库中的模块具有最高优先级。
+  >   
+  > , --updates-scripts-only
+  >
+  >   仅更新脚本文件。
+  >   这个选项在项目初始生成时用于生成生成器脚本本身。
+  >   
 - [./script/publish-local.sh](<./scripts/publish-local.sh>)
 
   项目中的资源生成后，在`./dest`目录下的资源作为模板模块建立，并在本地资源库中注册。
@@ -146,43 +151,48 @@ $ ./script/generate
   >
   >   这个选项与[generate.sh](<./scripts/generate.sh>)中的同名选项相同。
   >   
+  > , --local-module-repository [VALUE]
+  >
+  >   到本地存储库的路径。
+  >   如果在指定的路径中不存在存储库，将自动创建。
+  >   
 ### 源码列表
 
 
 - [model/project.yaml](<./model/project.yaml>)
-- [src/dest/{each services as service}{hyphen service.name}/application.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/application.properties.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs](<./src/dest/{each services as service}{hyphen service.name}/build.gradle.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/gradlew](<./src/dest/{each services as service}{hyphen service.name}/gradlew>)
-- [src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar](<./src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar>)
-- [src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties](<./src/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties>)
-- [src/dest/{each services as service}{hyphen service.name}/settings.gradle.hbs](<./src/dest/{each services as service}{hyphen service.name}/settings.gradle.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Entity.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Entity.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Resolver.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Resolver.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}RepositoryBase.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}RepositoryBase.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}Repository.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}Repository.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}LogicBase.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}LogicBase.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}Logic.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}Logic.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}RequestPayload.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}RequestPayload.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}ResponsePayload.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}ResponsePayload.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}ResourceBase.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}ResourceBase.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/GraphqlContextBuilder.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/GraphqlContextBuilder.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/{upper-camel service.identifier}Application.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/{upper-camel service.identifier}Application.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/util/JooqUtil.kt.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/util/JooqUtil.kt.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml>)
-- [src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs](<./src/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs>)
-- [src/scripts/{each services as service}{hyphen service.name}/bootrun.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/bootrun.sh.hbs>)
-- [src/scripts/{each services as service}{hyphen service.name}/container_image/Dockerfile](<./src/scripts/{each services as service}{hyphen service.name}/container_image/Dockerfile>)
-- [src/scripts/{each services as service}{hyphen service.name}/container-image-build.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/container-image-build.sh.hbs>)
-- [src/scripts/{each services as service}{hyphen service.name}/container_image/entrypoint.sh](<./src/scripts/{each services as service}{hyphen service.name}/container_image/entrypoint.sh>)
-- [src/scripts/{each services as service}{hyphen service.name}/container-image-push.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/container-image-push.sh.hbs>)
-- [src/scripts/{each services as service}{hyphen service.name}/container-image-settings.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/container-image-settings.sh.hbs>)
-- [src/scripts/{each services as service}{hyphen service.name}/jooqgen.sh.hbs](<./src/scripts/{each services as service}{hyphen service.name}/jooqgen.sh.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/application.properties.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/application.properties.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/build.gradle.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/build.gradle.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/gradlew](<./src/template/dest/{each services as service}{hyphen service.name}/gradlew>)
+- [src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar](<./src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar>)
+- [src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties](<./src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties>)
+- [src/template/dest/{each services as service}{hyphen service.name}/settings.gradle.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/settings.gradle.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Entity.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Entity.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Resolver.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}Resolver.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}RepositoryBase.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}RepositoryBase.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}Repository.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{top_level.class_name}Repository.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}LogicBase.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}LogicBase.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}Logic.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}Logic.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}RequestPayload.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}RequestPayload.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}ResponsePayload.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{each resource.operations as operation}{lower-underscore operation.identifier}/{upper-camel operation.identifier}ResponsePayload.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}ResourceBase.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}ResourceBase.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{each service.resources as resource}{path resource.namespace}/{upper-camel resource.identifier}Resource.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/GraphqlContextBuilder.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/GraphqlContextBuilder.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/configuration/JooqConfiguration.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/controller/{each service.resources as resource}{upper-camel resource.identifier}Controller.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/query/QueryResolver.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/{upper-camel service.identifier}Application.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/{upper-camel service.identifier}Application.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/util/JooqUtil.kt.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/kotlin/{path service.namespace}/util/JooqUtil.kt.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/application.properties.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml>)
+- [src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs>)
+- [src/template/scripts/{each services as service}/bootrun.sh.hbs](<./src/template/scripts/{each services as service}/bootrun.sh.hbs>)
+- [src/template/scripts/{each services as service}/container_image/Dockerfile](<./src/template/scripts/{each services as service}/container_image/Dockerfile>)
+- [src/template/scripts/{each services as service}/container-image-build.sh.hbs](<./src/template/scripts/{each services as service}/container-image-build.sh.hbs>)
+- [src/template/scripts/{each services as service}/container_image/entrypoint.sh](<./src/template/scripts/{each services as service}/container_image/entrypoint.sh>)
+- [src/template/scripts/{each services as service}/container-image-push.sh.hbs](<./src/template/scripts/{each services as service}/container-image-push.sh.hbs>)
+- [src/template/scripts/{each services as service}/container-image-settings.sh.hbs](<./src/template/scripts/{each services as service}/container-image-settings.sh.hbs>)
+- [src/template/scripts/{each services as service}/jooqgen.hbs.sh](<./src/template/scripts/{each services as service}/jooqgen.hbs.sh>)
 
 
 <!-- @main-content@ -->

@@ -1,33 +1,18 @@
 project:
   group: laplacian-arch
-  name: service-api.springboot2-template
+  name: api-service.springboot2-template
   type: template
-  namespace: laplacian_arch.service_api_springboot2_template
+  namespace: laplacian_arch.api_service_springboot2_template
   version: '1.0.0'
   description:
     en: |
-      This template gives a service api implementation based on the [service-api](https://github.com/nabla-squared/laplacian-arch.service-api.schema-model/) model.
-      The architecture stack which is employed in this template is:
-        - Alpine based docker image
-        - OpenJDK8
-        - SpringBoot 2
-        - Java-Graphql
+      This template generates a [SpringBoot2](https://spring.io/projects/spring-boot) based runtime based on an [API service model](https://github.com/nabla-squared/api-service.domain-model/).
     ja: |
-      This template gives a service api implementation based on the [service-api](https://github.com/nabla-squared/laplacian-arch.service-api.schema-model/) model.
-      The architecture stack which is employed in this template is:
-        - Alpine based docker image
-        - OpenJDK8
-        - SpringBoot 2
-        - Java-Graphql
+      このテンプレートは[APIサービスモデル](https://github.com/nabla-squared/api-service.domain-model/)の定義に従って、[SpringBoot2](https://spring.io/projects/spring-boot)ベースのランタイムを生成します。
     zh: |
-      This template gives a service api implementation based on the [service-api](https://github.com/nabla-squared/laplacian-arch.service-api.schema-model/) model.
-      The architecture stack which is employed in this template is:
-        - Alpine based docker image
-        - OpenJDK8
-        - SpringBoot 2
-        - Java-Graphql
+      该模板基于[API服务模型](https://spring.io/projects/spring-boot)生成一个基于[SpringBoot2](https://github.com/nabla-squared/api-service.domain-model/)的运行时。
   source_repository:
-    url: https://github.com/laplacian-arch/service-api.springboot2-template.git
+    url: https://github.com/laplacian-arch/api-service.springboot2-template.git
     branch: master
   module_repositories:
     local:
