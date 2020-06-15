@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-
 set -e
-PROJECT_BASE_DIR=$(cd $"${BASH_SOURCE%/*}/../../" && pwd)
+PROJECT_BASE_DIR=$(cd "$(dirname $BASH_SOURCE)/../../" && pwd)
 SCRIPT_BASE_DIR="$PROJECT_BASE_DIR/scripts"
 SERVICE_NAME='{{hyphen service.identifier}}'
 SERVICE_BASE_DIR="$PROJECT_BASE_DIR/dest/$SERVICE_NAME"
