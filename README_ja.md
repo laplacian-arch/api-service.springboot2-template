@@ -160,8 +160,11 @@ $ ./script/generate
 
 
 - [model/project.yaml](<./model/project.yaml>)
-- [src/template/dest/{each services as service}{hyphen service.name}/application.properties.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/application.properties.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/Dockerfile.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/Dockerfile.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/Dockerfile.local-dev.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/Dockerfile.local-dev.hbs>)
 - [src/template/dest/{each services as service}{hyphen service.name}/build.gradle.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/build.gradle.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/.dockerignore.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/.dockerignore.hbs>)
+- [src/template/dest/{each services as service}{hyphen service.name}/entrypoint.hbs.sh](<./src/template/dest/{each services as service}{hyphen service.name}/entrypoint.hbs.sh>)
 - [src/template/dest/{each services as service}{hyphen service.name}/gradlew](<./src/template/dest/{each services as service}{hyphen service.name}/gradlew>)
 - [src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar](<./src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.jar>)
 - [src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties](<./src/template/dest/{each services as service}{hyphen service.name}/gradle/wrapper/gradle-wrapper.properties>)
@@ -186,13 +189,6 @@ $ ./script/generate
 - [src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{each service.relating_top_level_entities as top_level}{path top_level.namespace}/entity/{top_level.identifier}/{each top_level.aggregated_entities as entity}{entity.class_name}.graphqls.hbs>)
 - [src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/logback.xml>)
 - [src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs](<./src/template/dest/{each services as service}{hyphen service.name}/src/gen/resources/{path service.namespace}/query/Query.graphqls.hbs>)
-- [src/template/scripts/{each services as service}/bootrun.sh.hbs](<./src/template/scripts/{each services as service}/bootrun.sh.hbs>)
-- [src/template/scripts/{each services as service}/container_image/Dockerfile](<./src/template/scripts/{each services as service}/container_image/Dockerfile>)
-- [src/template/scripts/{each services as service}/container-image-build.sh.hbs](<./src/template/scripts/{each services as service}/container-image-build.sh.hbs>)
-- [src/template/scripts/{each services as service}/container_image/entrypoint.sh](<./src/template/scripts/{each services as service}/container_image/entrypoint.sh>)
-- [src/template/scripts/{each services as service}/container-image-push.sh.hbs](<./src/template/scripts/{each services as service}/container-image-push.sh.hbs>)
-- [src/template/scripts/{each services as service}/container-image-settings.sh.hbs](<./src/template/scripts/{each services as service}/container-image-settings.sh.hbs>)
-- [src/template/scripts/{each services as service}/jooqgen.hbs.sh](<./src/template/scripts/{each services as service}/jooqgen.hbs.sh>)
 
 
 <!-- @main-content@ -->

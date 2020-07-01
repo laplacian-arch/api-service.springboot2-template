@@ -9,6 +9,8 @@ plugins {
 group = "{{project.name}}"
 version = "{{service.version}}"
 
+defaultTasks 'bootJar'
+
 dependencies {
   implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
   implementation 'org.jetbrains.kotlin:kotlin-reflect'
@@ -43,8 +45,8 @@ bootRun {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
-    freeCompilerArgs = [ "-Xjsr305=strict" ]
-    jvmTarget = "1.8"
+    freeCompilerArgs = [ '-Xjsr305=strict' ]
+    jvmTarget = '11'
   }
 }
 
@@ -55,16 +57,17 @@ sourceSets {
   test.resources.srcDirs += ["src/gen/resources"]
 }
 
-{{define 'datasource' service.datasource}}
+{{define 'datasource' service.datasource ~}}
+{{define 'jdbc_url' (replace datasource.jdbc_url datasource.hostname 'localhost') ~}}
 jooq {
   version = '3.13.1'
   edition = 'OSS'
   generateSchemaSourceOnCompilation = false
   {{lower-camel datasource.name}}(sourceSets.main) {
     jdbc {
-      url = "{{datasource.jdbc_url}}"
-      user = "{{datasource.user}}"
-      password = "{{datasource.password}}"
+      url = "{{jdbc_url}}"
+      user = "{{datasource.db_user}}"
+      password = "{{datasource.db_password}}"
     }
     generator {
       name = 'org.jooq.codegen.DefaultGenerator'

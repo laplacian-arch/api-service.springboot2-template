@@ -1,0 +1,11 @@
+{{define 'is_local_dev' true ~}}
+{{define 'service_name' (hyphen service.name) ~}}
+**
+
+!/src/**
+!build.gradle
+!settings.gradle
+!entrypoint.sh
+{{#if 'is_local_dev' ~}}
+!/build/libs/{{sesrvice_name}}*.jar
+{{/if}}

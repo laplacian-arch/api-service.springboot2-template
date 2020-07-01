@@ -1,0 +1,11 @@
+# {{define 'service_name' (hyphen service.name)}}
+FROM gradle:6.5-jdk11 AS build
+COPY --chown=gradle:gradle . /home/gradle/
+WORKDIR /home/gradle
+RUN gradle build --no-daemon
+
+FROM adoptopenjdk:11-jdk-hotspot
+RUN mkdir /app
+COPY --from=build /home/gradle/build/libs/{{sesrvice_name}}*.jar /app/api.jar
+COPY ./entrypoint.sh /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
