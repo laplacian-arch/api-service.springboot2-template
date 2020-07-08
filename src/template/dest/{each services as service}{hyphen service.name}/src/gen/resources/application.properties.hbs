@@ -1,5 +1,9 @@
 {{define "datasource" service.datasource}}
-spring.datasource.url={{datasource.jdbc_url}}
-spring.datasource.username={{datasource.db_user}}
-spring.datasource.password={{datasource.db_password}}
+spring.r2dbc.url=r2dbc:pool:postgresql://127.0.0.1:{{datasource.port}}/{{datasource.db_name}}
+spring.r2dbc.username={{datasource.db_user}}
+spring.r2dbc.password={{datasource.db_password}}
+spring.r2dbc.pool.initial-size=5
+spring.r2dbc.pool.max-size=10
+spring.r2dbc.pool.max-idle-time=1m
+spring.r2dbc.pool.validation-query=SELECT 1
 altair.cdn.enabled=true

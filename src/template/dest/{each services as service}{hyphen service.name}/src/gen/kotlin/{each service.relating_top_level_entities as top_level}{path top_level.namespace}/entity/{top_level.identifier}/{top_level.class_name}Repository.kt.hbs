@@ -1,64 +1,52 @@
-{{#define "repository_name"}}{{top_level.class_name}}Repository{{/define}}
-{{#define "package"}}{{top_level.namespace}}.entity.{{top_level.identifier}}{{/define}}
+{{define "repository_class_name" (concat (upper-camel top_level.name) 'Repository') ~}}
+{{define "package" (concat top_level.namespace '.entity.' (lower-snake top_level.name)) ~}}
 package {{package}}
 import java.util.concurrent.CompletableFuture
+
+typealias Records = List<Record>
+typealias Record = Map<String, Any?>
 
 /**
  * The interface which abstracts the details of the data access concerning {{plural top_level.name}}.
  */
-interface {{repository_name}} {
-
-{{#*inline "METHOD_DEFINITION_FOR_AN_ENTITY"}}
-    {{#define "plural_name"}}{{plural entity.name}}{{/define}}
-    {{#define "entity_class_name"}}{{entity.class_name}}Entity{{/define}}
-    {{#define "entity_set"}}Set<{{entity_class_name}}>{{/define}}
-    {{#define "loader_method_name"}}load{{upper-camel plural_name}}{{/define}}
-    {{#define "fqn"}}{{entity.fqn}}{{/define}}
-
+interface {{repository_class_name}} {
+{{#*inline "METHOD_DEFINITION_FOR_AN_ENTITY" ~}}
+    {{define "plural_name" (plural entity.name) ~}}
+    {{define "entity_class_name" (concat entity.class_name 'Entity') ~}}
+    {{define "entity_set" (printf 'Set<%s>' entity_class_name) ~}}
+    {{define "loader_method_name" (concat 'load' (upper-camel plural_name)) ~}}
+    {{define "fqn" entity.fqn ~}}
     {{#each data_accesses as |data_access| ~}}
     {{#if (eq data_access.entity.fqn fqn) ~}}
-    {{#define "method_name"}}{{lower-camel data_access.identifier}}{{/define}}
+    {{define "method_name" (lower-camel data_access.name) ~}}
     /**
      * {{trim data_access.description}}
      */
-    fun {{method_name}}(): {{data_access.type}}
-
-    /**
-     * {{trim data_access.description}} (executed asynchronously)
-     */
-    fun {{method_name}}Async(): CompletableFuture<{{data_access.type}}>
+    fun {{method_name}}(): CompletableFuture<{{data_access.type}}>
     {{/if}}
     {{/each}}
 
     /**
-     * Load {{plural_name}} from given primary keys.
+     * Loads all {{plural_name}}.
      */
-    fun {{loader_method_name}}(keys: {{entity_set}}): {{entity_set}}
+    fun {{loader_method_name}}(): CompletableFuture<{{entity_set}}>
 
     /**
-     * Load {{plural_name}} asynchronously from given primary keys.
+     * Loads {{plural_name}} having given primary keys.
      */
-    fun {{loader_method_name}}Async(keys: {{entity_set}}): CompletableFuture<{{entity_set}}>
-
+    fun {{loader_method_name}}(keys: {{entity_set}}): CompletableFuture<{{entity_set}}>
     {{#each entity.stored_relationships as |r| ~}}
     {{#if r.multiple ~}}
-    {{#define "reference_entity_class_name"}}{{r.reference_entity.class_name}}Entity{{/define}}
-    {{#define "loader_method_name"}}load{{upper-camel r.property_name}}Of{{upper-camel entity.name}}{{/define}}
+    {{define "reference_entity_class_name" (concat (upper-camel r.reference_entity.name) 'Entity') ~}}
+    {{define "loader_method_name" (concat 'load' (upper-camel r.name) 'Of' (upper-camel entity.name)) ~}}
     /**
-     * Load {{plural r.name}} for each given {{plural_name}}.
+     * Loads {{r.name}}
      */
-    fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): Map<{{entity_class_name}}, List<{{reference_entity_class_name}}>>
-
-    /**
-     * Load {{plural r.name}} for each given {{plural_name}} asynchronously.
-     */
-    fun {{loader_method_name}}Async(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, List<{{reference_entity_class_name}}>>>
+    fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, List<{{reference_entity_class_name}}>>>
     {{/if}}
     {{/each}}
-
-
 {{/inline}}
     {{#each top_level.aggregated_entities as |entity| ~}}
-    {{> METHOD_DEFINITION_FOR_AN_ENTITY entity=entity}}
+    {{> METHOD_DEFINITION_FOR_AN_ENTITY entity=entity ~}}
     {{/each}}
 }

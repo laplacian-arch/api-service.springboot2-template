@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.CompletableFuture
 
 /**
- * An implementation of {{entity.name}} entity data-loader.
+ * An reactive implementation of the {{entity.name}} entity query resolver.
  */
 @Component
 class {{entity.class_name}}Resolver(
@@ -26,7 +26,7 @@ class {{entity.class_name}}Resolver(
     {{#each entity.stored_properties as |property| ~}}
     {{#unless property.primary_key ~}}
     /**
-     * load the {{property.name}} of this entity.
+     * Loads the {{property.name}} of this entity.
      */
     fun {{property.property_name}}(self: {{entity_name}}, context: DataFetchingEnvironment): CompletableFuture<{{property.class_name}}> =
         context
@@ -37,15 +37,12 @@ class {{entity.class_name}}Resolver(
     {{/each}}
 
     {{#each entity.stored_relationships as |relationship| ~}}
-    {{#define "ref_type"}}{{#trim}}
-    {{#if relationship.multiple}}
-    List<{{relationship.reference_entity.class_name}}Entity>
-    {{else}}
-    {{relationship.reference_entity.class_name}}Entity
-    {{/if}}
-    {{/trim}}{{/define}}
+    {{define "ref_type" (if relationship.multiple
+        (printf 'List<%sEntity>' relationship.reference_entity.class_name)
+        (printf '%sEntity' relationship.reference_entity.class_name)
+    )~}}
     /**
-     * load the {{relationship.name}} of this entity.
+     * Loads the {{relationship.name}} of this entity.
      */
     fun {{relationship.property_name}}(self: {{entity_name}}, context: DataFetchingEnvironment): CompletableFuture<{{ref_type}}> =
         context
@@ -62,7 +59,7 @@ class {{entity.class_name}}Resolver(
     fun registerLoader(registry: DataLoaderRegistry) {
         registry.register(BY_PK, DataLoader.newMappedDataLoader<{{entity_name}}, {{entity_name}}> { keys ->
             {{lower-camel top_level.identifier}}Repository
-                .load{{upper-camel (plural entity.identifier)}}Async(keys)
+                .load{{upper-camel (plural entity.identifier)}}(keys)
                 .thenApply{ set -> set.map{ (it to it) }.toMap() }
         })
         {{#each entity.stored_relationships as |relationship| ~}}
@@ -70,7 +67,7 @@ class {{entity.class_name}}Resolver(
         {{define "ref_entity" relationship.reference_entity}}
         registry.register({{upper-underscore relationship.property_name}}, DataLoader.newMappedDataLoader<{{entity_name}}, List<{{ref_entity.class_name}}Entity>> { keys ->
             {{lname}}Repository
-                .load{{upper-camel relationship.property_name}}Of{{entity.class_name}}Async(keys)
+                .load{{upper-camel relationship.property_name}}Of{{entity.class_name}}(keys)
         })
         {{/if}}
         {{/each}}

@@ -1,39 +1,38 @@
-{{#define "entity_name"}}{{entity.class_name}}Entity{{/define}}
-{{#define "with_jooq"}}{{data_accesses.contains_jooq_scripts}}{{/define}}
-{{#define "package"}}{{top_level.namespace}}.entity.{{top_level.identifier}}{{/define}}
+{{define "entity_class_name" (concat entity.class_name 'Entity') ~}}
+{{define "package" (concat top_level.namespace '.entity.' (lower-snake top_level.name)) ~}}
 package {{package}}
-{{#each entity.relating_top_level_entities as |e|}}
-{{#define "e_package"}}{{e.namespace}}.entity.{{e.identifier}}{{/define}}
-{{#unless (eq e_package package)}}
+{{#each entity.relating_top_level_entities as |e| ~}}
+{{define "e_package" (concat e.namespace '.entity.' (lower-snake e.name)) ~}}
+{{#unless (eq e_package package) ~}}
 import {{e_package}}.{{e.class_name}}Entity
 {{/unless}}
 {{/each}}
-{{#if with_jooq}}
-import org.jooq.Record
-import org.jooq.Result
-{{/if}}
 import java.util.*
 
 /**
  * {{trim entity.description}}
  */
-class {{entity_name}} {
-    {{#each entity.inherited_from as |inheritance|}}
-    {{#each inheritance.reference_entity.primary_keys as |pk|}}
+class {{entity_class_name}} {
+    {{#each entity.inherited_from as |inheritance| ~}}
+    {{#each inheritance.reference_entity.primary_keys as |pk| ~}}
     /**
      * {{trim pk.description}}
      */
     lateinit var {{lower-camel inheritance.identifier}}{{upper-camel pk.identifier}}: {{pk.class_name}}
     {{/each}}
     {{/each}}
-    {{#each entity.stored_properties as |p|}}
+    {{#each entity.stored_properties as |p| ~}}
     /**
      * {{trim p.description}}
      */
     {{#if p.default_value}}
     var {{p.property_name}}: {{p.class_name}} = {{p.default_value}}
+    {{else if (eq p.nullable)}}
+    var {{p.property_name}}: {{p.class_name}}? = null
     {{else if (eq p.type "number")}}
     var {{p.property_name}}: {{p.class_name}} = 0
+    {{else if (eq p.type "string")}}
+    var {{p.property_name}}: {{p.class_name}} = ""
     {{else}}
     lateinit var {{p.property_name}}: {{p.class_name}}
     {{/if}}
@@ -41,6 +40,9 @@ class {{entity_name}} {
 
     {{#each entity.stored_relationships as |r|}}
     {{#if r.multiple}}
+    /**
+     * {{trim r.description}}
+     */
     lateinit var {{r.property_name}}: List<{{r.reference_entity.class_name}}Entity>
     {{else}}
     /**
@@ -67,72 +69,107 @@ class {{entity_name}} {
     override fun equals(other: Any?): Boolean =
         (other === this) ||
         (other != null) &&
-        (other is {{entity_name}}) &&
-        {{#each entity.inherited_from as |inheritance|}}
-        {{#each inheritance.reference_entity.primary_keys as |pk|}}
-        {{#define "propname"}}{{lower-camel inheritance.property_name}}{{upper-camel pk.property_name}}{{/define}}
-        Objects.equals(this.{{propname}}, other.{{propname}}){{#unless (and @last (not entity.primary_keys))}} &&{{/unless}}
+        (other is {{entity_class_name}}) &&
+        {{#each entity.owner.primary_keys as |pk| ~}}
+        {{#define "prop_name"}}{{lower-camel entity.owned_by.name}}{{upper-camel pk.name}}{{/define}}
+        Objects.equals(this.{{prop_name}}, other.{{prop_name}}){{#unless (and @last (not entity.primary_keys))}} &&{{/unless}}
         {{/each}}
-        {{/each}}
-        {{#each entity.primary_keys as |pk|}}
-        Objects.equals(this.{{pk.property_name}}, other.{{pk.property_name}}){{#unless @last}} &&{{/unless}}
+        {{#each entity.primary_keys as |pk| ~}}
+        Objects.equals(this.{{lower-camel pk.name}}, other.{{lower-camel pk.name}}){{#unless @last}} &&{{/unless}}
         {{/each}}
 
     override fun hashCode(): Int = Objects.hash(
-        {{#each entity.inherited_from as |inheritance|}}
-        {{#each inheritance.reference_entity.primary_keys as |pk|}}
-        this.{{lower-camel inheritance.property_name}}{{upper-camel pk.property_name}}{{#unless (and @last (not entity.primary_keys))}},{{/unless}}
+        {{#each entity.owner.primary_keys as |pk| ~}}
+        this.{{lower-camel entity.owned_by.name}}{{upper-camel pk.name}}{{#unless (and @last (not entity.primary_keys))}},{{/unless}}
         {{/each}}
-        {{/each}}
-        {{#each entity.primary_keys as |pk|}}
-        this.{{pk.property_name}}{{#unless @last}},{{/unless}}
+        {{#each entity.primary_keys as |pk| ~}}
+        this.{{lower-camel pk.name}}{{#unless @last}},{{/unless}}
         {{/each}}
     )
 
-    {{#if with_jooq}}
-    {{#define "lname"}}{{lower-camel entity.identifier}}{{/define}}
+    {{define "properties" (concat entity.owner.primary_keys entity.stored_properties)}}
     companion object {
-        {{#unless entity.stored_relationships}}
-        fun fromRecords(
-            records: Result<Record>,
-            vararg relationNames: String
-        ): List<{{entity_name}}> {
-            if (relationNames.isNotEmpty()) throw IllegalArgumentException(
-                "The {{entity.name}} entities do not have any relations: ${relationNames.joinToString(", ")}"
-            )
-            return records.into({{entity_name}}::class.java)
-        }
-        {{else}}
-        {{#each entity.stored_relationships as |r|}}
-        const val {{upper-underscore r.name}} = "{{upper-underscore r.name}}"
-        {{/each}}
-        /**
-         * Convert Jooq query result to the list of {{entity_name}}.
-         */
-        fun fromRecords(
-            records: Result<Record>,
-            vararg relationNames: String
-        ): List<{{entity_name}}> {
-            if (relationNames.isEmpty()) {
-                return records.into({{entity_name}}::class.java)
+        fun fromRecord(
+            record: Record,
+            prefix: String = ""
+        ): {{entity_class_name}} = {{entity_class_name}}().apply {
+            {{#if (any properties '(eq @it.type "string")') ~}}
+            val nonNullString = {key: String, value: Any? ->
+                value?.toString() ?: throw IllegalArgumentException(
+                    "$key must not be null: $record"
+                )
             }
-            val next = relationNames.first()
-            val remaining = relationNames.drop(1)
-            return records.intoGroups({{entity_name}}::class.java).map { ({{lname}}, records) ->
-                when (next) {
-                    {{#each entity.stored_relationships as |r|}}
-                    {{upper-underscore r.name}} -> {
-                        {{lname}}.{{lower-camel r.name}} = {{r.reference_entity.class_name}}Entity.fromRecords(records, *remaining.toTypedArray()){{#unless r.multiple}}.first(){{/unless}}
-                    }
+            {{/if}}
+            {{#if (any properties '(eq @it.type "number")') ~}}
+            val nonNullInteger = {key: String, value: Any? ->
+                if (value is Int)
+                  value
+                else
+                  value?.toString()?.toInt() ?: throw IllegalArgumentException(
+                    "$key must not be null: $record"
+                  )
+            }
+            {{/if}}
+            {{#if (any properties '(eq @it.type "boolean")') ~}}
+            val nonNullBoolean = {key: String, value: Any? ->
+                nonNullInteger(key, value) != 0
+            }
+            {{/if}}
+            record.forEach { k, v ->
+                when(k) {
+                    {{#each entity.owner.primary_keys as |pk| ~}}
+                    {{define 'derived_pk_name' (printf '%s_%s' entity.owned_by.name pk.name) ~}}
+                    {{define 'converter' (case
+                      (eq pk.type "string") "nonNullString(k, v)"
+                      (eq pk.type "number") "nonNullInteger(k, v)"
+                      (eq pk.type "boolean") "nonNullBoolean(k, v)"
+                    ) ~}}
+                    prefix + "{{lower-snake derived_pk_name}}" -> {{lower-camel derived_pk_name}} = {{converter}}
                     {{/each}}
-                    else -> throw IllegalArgumentException(
-                        "The given relation name '$next' is unknown for {{entity_name}}. Only following values are allowed: {{#each entity.stored_relationships as |r|}}{{upper-underscore r.name}}{{#unless @last}},{{/unless}}{{/each}}."
-                    )
+                    {{#each entity.stored_properties as |p| ~}}
+                    {{define 'converter' (case
+                      (eq p.type "string") "nonNullString(k, v)"
+                      (eq p.type "number") "nonNullInteger(k, v)"
+                      (eq p.type "boolean") "nonNullBoolean(k, v)"
+                    ) ~}}
+                    prefix + "{{lower-snake p.property_name}}" -> {{lower-camel p.property_name}} = {{converter}}
+                    {{/each}}
                 }
-                {{lname}}
+            }
+        }
+
+        {{#unless entity.stored_relationships ~}}
+        fun fromRecords(
+            records: Records,
+            prefix: String = ""
+        ): List<{{entity_class_name}}> {
+            return records.map { fromRecord(it, prefix) }
+        }
+
+        {{else}}
+        fun fromRecords(
+            records: Records,
+            prefix: String = ""
+        ): List<{{entity_class_name}}> {
+            if (records.isEmpty()) return emptyList()
+            {{#each entity.stored_relationships as |relationship| ~}}
+            val nesting{{upper-camel relationship.name}} = records.first().keys.any{ it.startsWith("{{lower-camel relationship.name}}.") }
+            {{/each}}
+            return records.fold(mutableMapOf<{{entity_class_name}}, MutableList<Record>>()) { acc, record ->
+                val key = {{entity_class_name}}.fromRecord(record)
+                acc.also {
+                    it.getOrPut(key) { mutableListOf<Record>() }
+                      .add(record)
+                }
+            }.map { ({{lower-camel entity.name}}, records) ->
+                {{#each entity.stored_relationships as |relationship| ~}}
+                if (nesting{{upper-camel relationship.name}}) {
+                    {{lower-camel entity.name}}.{{lower-camel relationship.name}} = {{relationship.reference_entity.class_name}}Entity.fromRecords(records, "{{lower-snake relationship.name}}."){{#unless relationship.multiple}}.first(){{/unless}}
+                }
+                {{/each}}
+                {{lower-camel entity.name}}
             }
         }
         {{/unless}}
     }
-    {{/if}}
 }

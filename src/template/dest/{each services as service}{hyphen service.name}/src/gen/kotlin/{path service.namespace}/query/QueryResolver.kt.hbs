@@ -2,32 +2,26 @@
 package {{package}}
 
 import graphql.kickstart.tools.GraphQLQueryResolver
-import kotlinx.coroutines.future.future
-import kotlinx.coroutines.runBlocking
-{{#each service.relating_top_level_entities as |top_level|}}
-import {{top_level.namespace}}.entity.{{lower-underscore top_level.identifier}}.{{top_level.class_name}}Entity
-import {{service.namespace}}.entity.db.tables.{{top_level.class_name}}
+{{#each service.relating_top_level_entities as |top_level| ~}}
+import {{top_level.namespace}}.entity.{{lower-snake top_level.name}}.{{top_level.class_name}}Entity
+import {{top_level.namespace}}.entity.{{lower-snake top_level.name}}.{{top_level.class_name}}Repository
 {{/each}}
-import org.jooq.DSLContext
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.util.concurrent.CompletableFuture
 
 @Component
+@Transactional
 class QueryResolver(
-    val dsl: DSLContext
+   {{#each service.relating_top_level_entities as |top_level|~}}
+    val {{lower-camel top_level.name}}Repository: {{upper-camel top_level.name}}Repository{{#unless @last}},{{/unless}}
+   {{~/each}}
 ): GraphQLQueryResolver {
 
     {{#each service.relating_top_level_entities as |top_level| ~}}
-    {{#define "entity_name"}}{{top_level.identifier}}{{/define}}
-    val {{lower-camel entity_name}}: {{upper-camel entity_name}} = {{upper-camel entity_name}}.{{upper-underscore entity_name}}
-    {{/each}}
-
-    {{#each service.relating_top_level_entities as |top_level| ~}}
-    fun {{lower-camel (plural top_level.identifier)}}(): CompletableFuture<List<{{top_level.class_name}}Entity>> = runBlocking { future {
-        dsl
-        .select()
-        .from({{lower-camel top_level.identifier}})
-        .fetchInto({{top_level.class_name}}Entity::class.java)
-    }}
+    fun {{lower-camel (plural top_level.name)}}(): CompletableFuture<List<{{top_level.class_name}}Entity>> =
+        {{lower-camel top_level.name}}Repository
+        .load{{upper-camel (plural top_level.name)}}()
+        .thenApply{ it.toList() }
     {{/each}}
 }
