@@ -2,6 +2,9 @@
 {{define "package" (concat top_level.namespace '.entity.' (lower-snake top_level.name)) ~}}
 package {{package}}
 import java.util.concurrent.CompletableFuture
+{{#each top_level.relating_top_level_entities as |other| ~}}
+import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}Entity
+{{/each}}
 
 typealias Records = List<Record>
 typealias Record = Map<String, Any?>
@@ -35,15 +38,18 @@ interface {{repository_class_name}} {
      * Loads {{plural_name}} having given primary keys.
      */
     fun {{loader_method_name}}(keys: {{entity_set}}): CompletableFuture<{{entity_set}}>
+
     {{#each entity.stored_relationships as |r| ~}}
-    {{#if r.multiple ~}}
     {{define "reference_entity_class_name" (concat (upper-camel r.reference_entity.name) 'Entity') ~}}
+    {{define "result_type" (if r.multiple
+        (concat 'List<' reference_entity_class_name '>')
+        reference_entity_class_name
+    ) ~}}
     {{define "loader_method_name" (concat 'load' (upper-camel r.name) 'Of' (upper-camel entity.name)) ~}}
     /**
      * Loads {{r.name}}
      */
-    fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, List<{{reference_entity_class_name}}>>>
-    {{/if}}
+    fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, {{result_type}}>>
     {{/each}}
 {{/inline}}
     {{#each top_level.aggregated_entities as |entity| ~}}

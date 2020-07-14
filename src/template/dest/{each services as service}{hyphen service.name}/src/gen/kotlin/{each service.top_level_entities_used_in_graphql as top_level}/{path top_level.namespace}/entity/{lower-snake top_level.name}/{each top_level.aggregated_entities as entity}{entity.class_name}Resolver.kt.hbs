@@ -26,7 +26,7 @@ class {{entity.class_name}}Resolver(
     {{#each entity.stored_properties as |property| ~}}
     {{#unless property.primary_key ~}}
     /**
-     * Loads the {{property.name}} of this entity.
+     * Loads the {{property.name}} of this {{entity.name}}.
      */
     fun {{property.property_name}}(self: {{entity_name}}, context: DataFetchingEnvironment): CompletableFuture<{{property.class_name}}> =
         context
@@ -42,43 +42,41 @@ class {{entity.class_name}}Resolver(
         (printf '%sEntity' relationship.reference_entity.class_name)
     )~}}
     /**
-     * Loads the {{relationship.name}} of this entity.
+     * Loads the {{relationship.name}} of this {{entity.name}}.
      */
     fun {{relationship.property_name}}(self: {{entity_name}}, context: DataFetchingEnvironment): CompletableFuture<{{ref_type}}> =
         context
-        {{#if relationship.multiple ~}}
         .getDataLoader<{{entity_name}}, {{ref_type}}>({{upper-underscore relationship.property_name}})
         .load(self)
+        {{#if relationship.multiple}}
         .thenApply<{{ref_type}}>{ it ?: emptyList() }
-        {{else}}
-        .getDataLoader<{{ref_type}}, {{ref_type}}>({{upper-camel relationship.property_name}}Resolver.BY_PK)
-        .load(self.{{relationship.property_name}})
         {{/if}}
     {{/each}}
 
     fun registerLoader(registry: DataLoaderRegistry) {
         registry.register(BY_PK, DataLoader.newMappedDataLoader<{{entity_name}}, {{entity_name}}> { keys ->
             {{lower-camel top_level.identifier}}Repository
-                .load{{upper-camel (plural entity.identifier)}}(keys)
-                .thenApply{ set -> set.map{ (it to it) }.toMap() }
+            .load{{upper-camel (plural entity.identifier)}}(keys)
+            .thenApply{ set -> set.map{ (it to it) }.toMap() }
         })
         {{#each entity.stored_relationships as |relationship| ~}}
-        {{#if relationship.multiple ~}}
-        {{define "ref_entity" relationship.reference_entity}}
-        registry.register({{upper-underscore relationship.property_name}}, DataLoader.newMappedDataLoader<{{entity_name}}, List<{{ref_entity.class_name}}Entity>> { keys ->
+        {{define "ref_entity" relationship.reference_entity ~}}
+        {{define "ref_entity_class_name" (concat (upper-camel ref_entity.name) 'Entity') ~}}
+        {{define "result_type" (if relationship.multiple
+          (concat 'List<' ref_entity_class_name '>')
+          ref_entity_class_name
+        ) ~}}
+        registry.register({{upper-underscore relationship.property_name}}, DataLoader.newMappedDataLoader<{{entity_name}}, {{result_type}}> { keys ->
             {{lname}}Repository
-                .load{{upper-camel relationship.property_name}}Of{{entity.class_name}}(keys)
+            .load{{upper-camel relationship.property_name}}Of{{entity.class_name}}(keys)
         })
-        {{/if}}
         {{/each}}
     }
 
     companion object {
         const val BY_PK = "{{lname}}_byPK"
         {{#each entity.stored_relationships as |relationship| ~}}
-        {{#if relationship.multiple ~}}
         const val {{upper-underscore relationship.property_name}} = "{{lname}}_{{relationship.property_name}}"
-        {{/if}}
         {{/each}}
     }
 }

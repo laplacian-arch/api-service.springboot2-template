@@ -18,7 +18,7 @@ class QueryResolver(
    {{~/each}}
 ): GraphQLQueryResolver {
 
-    {{#each service.relating_top_level_entities as |top_level| ~}}
+    {{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
     fun {{lower-camel (plural top_level.name)}}(): CompletableFuture<List<{{top_level.class_name}}Entity>> =
         {{lower-camel top_level.name}}Repository
         .load{{upper-camel (plural top_level.name)}}()

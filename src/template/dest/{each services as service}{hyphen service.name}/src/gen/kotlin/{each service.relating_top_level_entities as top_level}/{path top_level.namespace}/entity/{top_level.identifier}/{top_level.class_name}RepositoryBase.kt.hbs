@@ -1,11 +1,14 @@
 {{#define "repository_name"}}{{top_level.class_name}}Repository{{/define}}
-{{#define "package"}}{{top_level.namespace}}.entity.{{top_level.identifier}}{{/define}}
+{{#define "package"}}{{top_level.namespace}}.entity.{{lower-snake top_level.name}}{{/define}}
 package {{package}}
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
 import org.springframework.data.r2dbc.core.DatabaseClient
 import java.util.concurrent.CompletableFuture
+{{#each top_level.relating_top_level_entities as |other| ~}}
+import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}Entity
+{{/each}}
 
 /**
  * An implementation of the {{repository_name}}.
@@ -27,6 +30,9 @@ class {{repository_name}}Base(
     {{/if}}
     {{/each}}
 
+    /**
+     * Loads {{plural_name}}.
+     */
     override fun {{loader_method_name}}(): CompletableFuture<Set<{{entity_class_name}}>> =
         db.execute(
         """
@@ -38,7 +44,7 @@ class {{repository_name}}Base(
           {{lower-snake pk.name}}{{#unless @last}},{{/unless}}
           {{/each}}
         FROM
-          {{lower-snake entity.name}}
+          {{table-name entity.name}}
         """
         .trimIndent())
         .fetch()
@@ -47,30 +53,35 @@ class {{repository_name}}Base(
         .map { {{entity_class_name}}.fromRecords(it).toSet() }
         .toFuture()
 
+    /**
+     * Loads {{plural_name}} having the given keys.
+     */
     override fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Set<{{entity_class_name}}>> =
         db.execute(
         """
         SELECT
           {{#each entity.owner.primary_keys as |pk| ~}}
-          {{lower-snake entity.owned_by.name}}_{{lower-snake pk.name}},
+          {{column-name entity.owned_by.name}}_{{column-name pk.name}},
           {{/each}}
           {{#each entity.stored_properties as |property| ~}}
-          {{lower-snake property.name}}{{#unless @last}},{{/unless}}
+          {{column-name property.name}}{{#unless @last}},{{/unless}}
           {{/each}}
         FROM
-          {{lower-snake entity.name}}
+          {{table-name entity.name}}
         WHERE
         -- ${keys.mapIndexed{ index, _ -> """
           {{#each entity.owner.primary_keys as |pk| ~}}
-          {{define 'column_name' (concat (lower-snake entity.owned_by.name) '_' (lower-snake pk.name)) ~}}
-          {{lower-snake entity.name}}.{{column_name}} = :{{lower-camel column_name}}${index}
+          {{define 'col_name' (column-name (concat entity.owned_by.name ' ' pk.name)) ~}}
+        {{#unless @first ~}}
         AND
+        {{/unless}}
+          {{table-name entity.name}}.{{col_name}} = :{{lower-camel col_name}}${index}
           {{/each}}
           {{#each entity.primary_keys as |pk| ~}}
-          {{lower-snake entity.name}}.{{lower-snake pk.name}} = :{{lower-camel pk.name}}${index}
-          {{#unless @last}}
+        {{#unless (and (not entity.owner) @first) ~}}
         AND
-          {{/unless}}
+        {{/unless}}
+          {{table-name entity.name}}.{{lower-snake pk.name}} = :{{lower-camel pk.name}}${index}
           {{/each}}
         -- """}.joinToString("\nOR\n")}
         """.trimMargin())
@@ -78,8 +89,8 @@ class {{repository_name}}Base(
             keys.foldIndexed(sql){ index, acc, key ->
                 acc
                 {{#each entity.owner.primary_keys as |pk| ~}}
-                {{define 'column_name' (concat (lower-snake entity.owned_by.name) '_' (lower-snake pk.name)) ~}}
-                .bind("{{lower-camel column_name}}${index}", key.{{lower-camel column_name}})
+                {{define 'col_name' (column-name (concat entity.owned_by.name ' ' pk.name)) ~}}
+                .bind("{{lower-camel col_name}}${index}", key.{{lower-camel col_name}})
                 {{/each}}
                 {{#each entity.primary_keys as |pk| ~}}
                 .bind("{{lower-camel pk.name}}${index}", key.{{lower-camel pk.name}})
@@ -93,42 +104,82 @@ class {{repository_name}}Base(
         .toFuture()
 
     {{#each entity.stored_relationships as |r| ~}}
-    {{#if r.multiple ~}}
     {{define "reference_entity" r.reference_entity ~}}
     {{define "reference_entity_class_name" (concat reference_entity.class_name 'Entity') ~}}
-    {{define "relationship_name" reference_entity.owned_by.name ~}}
+    {{define "result_type" (if r.multiple
+        (concat 'List<' reference_entity_class_name '>')
+        reference_entity_class_name
+    ) ~}}
     {{define "loader_method_name" (concat 'load' (upper-camel r.name) 'Of' (upper-camel entity.name)) ~}}
-    override fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, List<{{reference_entity_class_name}}>>> =
+    {{define "derived_key_prefix" reference_entity.owned_by.name ~}}
+    /**
+     * Loads {{r.name}} of this {{entity.name}}.
+     */
+    override fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, {{result_type}}>> =
         db.execute(
         """
         SELECT
           {{#each entity.primary_keys as |pk| ~}}
-          {{define 'derived_pk_name' (concat (lower-snake relationship_name) '_' (lower-snake pk.name)) ~}}
-          {{derived_pk_name}} AS "{{lower-snake pk.name}}",
-          {{derived_pk_name}} AS "{{lower-snake r.name}}.{{derived_pk_name}}",
+          {{define 'is_last' (and @last (not reference_entity.primary_keys)) ~}}
+          {{#if r.aggregate ~}}
+          {{define 'derived_pk_name' (column-name (concat derived_key_prefix '_' pk.name)) ~}}
+          {{table-name entity.name}}.{{column-name pk.name}} AS "{{column-name pk.name}}",
+          {{table-name reference_entity.name}}.{{derived_pk_name}} AS "{{column-name r.name}}.{{derived_pk_name}}"{{if is_last '' ','}}
+          {{else}}
+          {{table-name entity.name}}.{{column-name pk.name}} AS "{{column-name pk.name}}"{{if is_last '' ','}}
+          {{/if}}
           {{/each}}
           {{#each reference_entity.primary_keys as |pk| ~}}
-          {{lower-snake pk.name}} AS "{{lower-snake r.name}}.{{lower-snake pk.name}}"{{#unless @last}},{{/unless}}
+          {{table-name reference_entity.name}}.{{column-name pk.name}} AS "{{column-name r.name}}.{{column-name pk.name}}"{{if @last '' ','}}
           {{/each}}
         FROM
-          {{lower-snake reference_entity.name}}
+          {{table-name entity.name}},
+          {{table-name reference_entity.name}}
         WHERE
-        -- ${keys.mapIndexed{ index, _ -> """
+        {{#if r.aggregate ~}}
           {{#each entity.primary_keys as |pk| ~}}
-          {{#unless @first}}
-        AND
-          {{/unless}}
-          {{lower-snake relationship_name}}_{{lower-snake pk.name}} = :{{lower-camel relationship_name}}{{upper-camel pk.name}}${index}
+        {{if @first '' 'AND'}}
+          {{table-name entity.name}}.{{column-name pk.name}} = {{table-name reference_entity.name}}.{{column-name (concat derived_key_prefix ' ' pk.name)}}
           {{/each}}
+        {{else}}
+          {{#each r.mappings as |mapping| ~}}
+        {{if @first '' 'AND'}}
+          {{table-name entity.name}}.{{column-name mapping.from}} = {{table-name reference_entity.name}}.{{column-name mapping.to}}
+          {{/each}}
+        {{/if}}
+        AND (
+        -- ${keys.mapIndexed{ index, _ -> """
+        {{#if r.aggregate ~}}
+          {{#each entity.primary_keys as |pk| ~}}
+        {{#unless @first}}
+        AND
+        {{/unless}}
+          {{table-name reference_entity.name}}.{{column-name (concat derived_key_prefix ' ' pk.name)}} = :{{lower-camel derived_key_prefix}}{{upper-camel pk.name}}${index}
+          {{/each}}
+        {{else}}
+          {{#each r.mappings as |mapping| ~}}
+        {{#unless @first}}
+        AND
+        {{/unless}}
+          {{table-name reference_entity.name}}.{{column-name mapping.to}} = :{{lower-camel mapping.from}}${index}
+          {{/each}}
+        {{/if}}
         -- """}.joinToString("\nOR\n")}
+        )
         """.trimMargin())
         .let { sql ->
             keys.foldIndexed(sql){ index, acc, key ->
                 acc
+                {{#if r.aggregate ~}}
                 {{#each entity.primary_keys as |pk| ~}}
-                {{define 'prop_name' (concat (lower-camel relationship_name) (upper-camel pk.name) '${index}') ~}}
-                .bind("{{prop_name}}", key.{{pk.name}})
+                {{define 'prop_name' (concat (lower-camel derived_key_prefix) (upper-camel pk.name) '${index}') ~}}
+                .bind("{{prop_name}}", key.{{lower-camel pk.name}})
                 {{/each}}
+                {{else}}
+                {{#each r.mappings as |mapping|}}
+                .bind("{{lower-camel mapping.from}}${index}", key.{{lower-camel mapping.from}})
+                {{/each}}
+                {{/if}}
             }
         }
         .fetch()
@@ -136,7 +187,6 @@ class {{repository_name}}Base(
         .collectList()
         .map { {{entity_class_name}}.fromRecords(it).map{ it to it.{{lower-camel r.name}} }.toMap() }
         .toFuture()
-    {{/if}}
     {{/each}}
 {{/inline}}
     {{#each top_level.aggregated_entities as |e| ~}}
