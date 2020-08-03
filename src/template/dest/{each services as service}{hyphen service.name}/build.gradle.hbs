@@ -19,14 +19,12 @@ dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-actuator'
   implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
   implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
-  implementation "com.graphql-java-kickstart:graphql-spring-boot-starter:$springBootGraphqlVersion"
-  implementation "com.graphql-java-kickstart:altair-spring-boot-starter:$springBootGraphqlVersion"
+  implementation "com.graphql-java:graphql-java:$graphqlJavaVersion"
 
   runtimeOnly "io.r2dbc:r2dbc-postgresql:$r2dbcPostgresVersion"
 
   testImplementation 'org.jetbrains.kotlin:kotlin-test'
   testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
-  testImplementation "com.graphql-java-kickstart:graphql-spring-boot-starter-test:$springBootGraphqlVersion"
 }
 
 repositories {

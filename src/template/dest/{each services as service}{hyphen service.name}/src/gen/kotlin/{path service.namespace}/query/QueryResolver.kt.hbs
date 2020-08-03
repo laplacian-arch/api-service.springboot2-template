@@ -1,27 +1,33 @@
 {{#define "package"}}{{service.namespace}}.query{{/define}}
 package {{package}}
 
-import graphql.kickstart.tools.GraphQLQueryResolver
 {{#each service.relating_top_level_entities as |top_level| ~}}
 import {{top_level.namespace}}.entity.{{lower-snake top_level.name}}.{{top_level.class_name}}Entity
 import {{top_level.namespace}}.entity.{{lower-snake top_level.name}}.{{top_level.class_name}}Repository
 {{/each}}
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
+import graphql.schema.idl.RuntimeWiring
+import graphql.schema.idl.TypeRuntimeWiring
 import java.util.concurrent.CompletableFuture
 
 @Component
-@Transactional
 class QueryResolver(
-   {{#each service.relating_top_level_entities as |top_level|~}}
+    {{#each service.relating_top_level_entities as |top_level|~}}
     val {{lower-camel top_level.name}}Repository: {{upper-camel top_level.name}}Repository{{#unless @last}},{{/unless}}
-   {{~/each}}
-): GraphQLQueryResolver {
-
+    {{/each}}
+) {
     {{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
     fun {{lower-camel (plural top_level.name)}}(): CompletableFuture<List<{{top_level.class_name}}Entity>> =
         {{lower-camel top_level.name}}Repository
         .load{{upper-camel (plural top_level.name)}}()
         .thenApply{ it.toList() }
     {{/each}}
+
+    fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
+        TypeRuntimeWiring.newTypeWiring("Query")
+        {{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
+        {{define 'property_name' (lower-camel (plural top_level.name)) ~}}
+        .dataFetcher("{{property_name}}") { {{property_name}}() }
+        {{/each}}
+    )
 }

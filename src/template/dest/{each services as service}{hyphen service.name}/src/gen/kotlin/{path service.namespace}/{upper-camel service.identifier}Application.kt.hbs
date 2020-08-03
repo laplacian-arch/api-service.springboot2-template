@@ -4,22 +4,20 @@ package {{service.namespace}}
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.ComponentScan
-import org.springframework.transaction.annotation.EnableTransactionManagement
 
 /**
  * The launcher class for the {{service.name}} service.
  */
 @SpringBootApplication
 @ComponentScan(basePackages = [
-    {{#each (unique (map service.resources '@it.namespace')) as |resource_ns|~}}
-    "{{resource_ns}}",
+    {{define 'namespaces' (unique (concat
+        (map service.resources '@it.namespace')
+        (map service.relating_top_level_entities '@it.namespace')
+    )) ~}}
+    {{#each namespaces as |namespace|~}}
+    "{{namespace}}"{{#unless @last}},{{/unless}}
     {{/each}}
-    {{#each (unique (map service.relating_top_level_entities '@it.namespace')) as |entity_ns|~}}
-    "{{entity_ns}}",
-    {{/each}}
-    "{{service.namespace}}"
 ])
-@EnableTransactionManagement
 class {{class_name}}
 
 /**
