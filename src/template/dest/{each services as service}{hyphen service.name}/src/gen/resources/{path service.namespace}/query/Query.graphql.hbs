@@ -3,6 +3,11 @@
 #
 type Query {
   {{#each service.relating_top_level_entities as |top_level| ~}}
-  {{lower-camel (plural top_level.identifier)}}: [{{top_level.class_name}}]!
+  {{lower-camel (plural top_level.name)}}: [{{upper-camel top_level.name}}]!
+  {{lower-camel top_level.name}}(
+    {{#each (filter top_level.properties '@it.primary_key') as |pk| ~}}
+    {{lower-camel pk.name}}: {{upper-camel pk.class_name}}!{{#unless @last}},{{/unless}}
+    {{/each}}
+  ): {{upper-camel top_level.name}}
   {{/each}}
 }

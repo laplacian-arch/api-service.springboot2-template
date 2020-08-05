@@ -8,6 +8,7 @@ import {{top_level.namespace}}.entity.{{lower-snake top_level.name}}.{{top_level
 import org.springframework.stereotype.Component
 import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
+import graphql.schema.DataFetchingEnvironment
 import java.util.concurrent.CompletableFuture
 
 @Component
@@ -17,7 +18,18 @@ class QueryResolver(
     {{/each}}
 ) {
     {{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
-    fun {{lower-camel (plural top_level.name)}}(): CompletableFuture<List<{{top_level.class_name}}Entity>> =
+
+    {{define "entity_class_name" (concat (upper-camel top_level.name) 'Entity') ~}}
+    fun {{lower-camel top_level.name}}(context: DataFetchingEnvironment): CompletableFuture<{{entity_class_name}}> =
+        context
+        .getDataLoader<{{entity_class_name}}, {{entity_class_name}}>({{concat (upper-snake top_level.name) '_BY_PK'}})
+        .load({{entity_class_name}}().apply {
+            {{#each (filter top_level.properties '@it.primary_key') as |pk| ~}}
+            this.{{lower-camel pk.name}} = context.getArgument("{{lower-camel pk.name}}")
+            {{/each}}
+        })
+
+    fun {{lower-camel (plural top_level.name)}}(): CompletableFuture<List<{{entity_class_name}}>> =
         {{lower-camel top_level.name}}Repository
         .load{{upper-camel (plural top_level.name)}}()
         .thenApply{ it.toList() }
@@ -26,8 +38,16 @@ class QueryResolver(
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
         TypeRuntimeWiring.newTypeWiring("Query")
         {{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
-        {{define 'property_name' (lower-camel (plural top_level.name)) ~}}
-        .dataFetcher("{{property_name}}") { {{property_name}}() }
+        {{define 'plural_name' (lower-camel (plural top_level.name)) ~}}
+        {{define 'singular_name' (lower-camel top_level.name) ~}}
+        .dataFetcher("{{plural_name}}") { {{plural_name}}() }
+        .dataFetcher("{{singular_name}}") { env -> {{singular_name}}(env)}
         {{/each}}
     )
+
+    companion object {
+        {{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
+        const val {{concat (upper-snake top_level.name) '_BY_PK'}} = "{{lower-camel top_level.name}}_byPK"
+        {{/each}}
+    }
 }
