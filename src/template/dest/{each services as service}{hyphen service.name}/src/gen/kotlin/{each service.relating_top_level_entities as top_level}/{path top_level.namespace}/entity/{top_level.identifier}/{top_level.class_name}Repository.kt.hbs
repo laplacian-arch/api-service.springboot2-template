@@ -16,8 +16,10 @@ interface {{repository_class_name}} {
 {{#*inline "METHOD_DEFINITION_FOR_AN_ENTITY" ~}}
     {{define "plural_name" (plural entity.name) ~}}
     {{define "entity_class_name" (concat entity.class_name 'Entity') ~}}
+    {{define "search_input_class_name" (concat entity.class_name 'SearchInput') ~}}
     {{define "entity_set" (printf 'Set<%s>' entity_class_name) ~}}
     {{define "loader_method_name" (concat 'load' (upper-camel plural_name)) ~}}
+    {{define "finder_method_name" (concat 'find' (upper-camel plural_name)) ~}}
     {{define "fqn" entity.fqn ~}}
     {{#each data_accesses as |data_access| ~}}
     {{#if (eq data_access.entity.fqn fqn) ~}}
@@ -30,9 +32,9 @@ interface {{repository_class_name}} {
     {{/each}}
 
     /**
-     * Loads all {{plural_name}}.
+     * Finds {{plural_name}} which matches the given conditions.
      */
-    fun {{loader_method_name}}(): CompletableFuture<{{entity_set}}>
+    fun {{finder_method_name}}(input: {{search_input_class_name}} = {{search_input_class_name}}()): CompletableFuture<{{entity_set}}>
 
     /**
      * Loads {{plural_name}} having given primary keys.

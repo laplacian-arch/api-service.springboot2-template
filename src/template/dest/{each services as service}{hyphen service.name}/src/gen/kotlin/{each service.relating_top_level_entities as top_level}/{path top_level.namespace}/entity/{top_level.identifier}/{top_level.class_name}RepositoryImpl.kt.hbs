@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
 import org.springframework.data.r2dbc.core.DatabaseClient
 import java.util.concurrent.CompletableFuture
+import laplacian.tutorial.entity.RepositoryBase
 {{#each top_level.relating_top_level_entities as |other| ~}}
 import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}Entity
 {{/each}}
@@ -14,13 +15,15 @@ import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other
  * An implementation of the {{repository_name}}.
  */
 @Component
-class {{repository_name}}Base(
+class {{repository_name}}Impl(
     private val db: DatabaseClient
-): {{repository_name}} {
+): RepositoryBase(db), {{repository_name}} {
 {{#*inline "METHOD_DEFINITION_FOR_AN_ENTITY"}}
     {{define "plural_name" (plural entity.name) ~}}
     {{define "entity_class_name" (concat (upper-camel entity.name) 'Entity') ~}}
+    {{define "search_input_class_name" (concat (upper-camel entity.name) 'SearchInput') ~}}
     {{define "loader_method_name" (concat 'load' (upper-camel plural_name)) ~}}
+    {{define "finder_method_name" (concat 'find' (upper-camel plural_name)) ~}}
     {{define "fqn" entity.fqn ~}}
     {{#each data_accesses as |data_access| ~}}
     {{#if (eq data_access.entity.fqn fqn) ~}}
@@ -33,7 +36,7 @@ class {{repository_name}}Base(
     /**
      * Loads {{plural_name}}.
      */
-    override fun {{loader_method_name}}(): CompletableFuture<Set<{{entity_class_name}}>> =
+    override fun {{finder_method_name}}(input: {{search_input_class_name}}): CompletableFuture<Set<{{entity_class_name}}>> =
         db.execute(
         """
         SELECT
@@ -45,8 +48,97 @@ class {{repository_name}}Base(
           {{/each}}
         FROM
           {{table-name entity.name}}
-        """
-        .trimIndent())
+        --${if (input.isEmpty()) "" else """
+        WHERE
+          {{#each entity.stored_properties as |p| ~}}
+          {{define "prop_name" (lower-camel p.name) ~}}
+          {{define "col_name" (column-name p.name) ~}}
+          {{define "table_name" (table-name entity.name) ~}}
+          {{#if (eq p.type 'string') ~}}
+          --${if (input.{{prop_name}}.equalsTo.isEmpty()) "" else """
+          (
+          --${input.{{prop_name}}.equalsTo.mapIndexed { index, _ -> """
+            {{table_name}}.{{col_name}} = :{{prop_name}}_equalsTo_${index}
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          --${if (input.{{prop_name}}.startsWith.isEmpty()) "" else """
+          (
+          --${input.{{prop_name}}.startsWith.mapIndexed { index, _ -> """
+            {{table_name}}.{{col_name}} LIKE :{{prop_name}}_startsWith_${index} ESCAPE '\'
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          --${if (input.{{prop_name}}.endsWith.isEmpty()) "" else """
+          (
+          --${input.{{prop_name}}.endsWith.mapIndexed { index, _ -> """
+            {{table_name}}.{{col_name}} LIKE :{{prop_name}}_endsWith_${index} ESCAPE '\'
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          --${if (input.{{prop_name}}.contains.isEmpty()) "" else """
+          (
+          --${input.{{prop_name}}.contains.mapIndexed { index, _ -> """
+            {{table_name}}.{{col_name}} LIKE :{{prop_name}}_contains${index} ESCAPE '\'
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          {{/if}}
+          {{#if (eq p.type 'number') ~}}
+          -- ${if (input.{{prop_name}}.equalsTo.isEmpty()) "" else """
+          (
+          -- ${input.{{prop_name}}.equalsTo.mapIndexed { index, _ -> """
+            {{table_name}}.{{col_name}} = :{{prop_name}}_equalsTo_${index}
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          -- ${if (input.{{prop_name}}.greaterThan == null) "" else """
+          (
+            {{table_name}}.{{col_name}} >= :{{prop_name}}_greaterThan
+          ) AND
+          --"""}
+          -- ${if (input.{{prop_name}}.lessThan == null) "" else """
+          (
+            {{table_name}}.{{col_name}} <= :{{prop_name}}_lessThan
+          ) AND
+          --"""}
+          {{/if}}
+          {{/each}}
+        --"""}
+        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), ""))
+        .let {
+            var sql = it
+            {{#each entity.stored_properties as |p| ~}}
+            {{#if (eq p.type 'string') ~}}
+            {{define "prop_name" (lower-camel p.name) ~}}
+            sql = input.{{prop_name}}.equalsTo.foldIndexed(sql){ index, acc, value ->
+                acc.bind("{{prop_name}}_equalsTo_${index}", value)
+            }
+            sql = input.{{prop_name}}.startsWith.foldIndexed(sql){ index, acc, value ->
+                acc.bind("{{prop_name}}_startsWith_${index}", escapeWildcard(value) + "%")
+            }
+            sql = input.{{prop_name}}.endsWith.foldIndexed(sql){ index, acc, value ->
+                acc.bind("{{prop_name}}_endsWith_${index}", "%" + escapeWildcard(value))
+            }
+            sql = input.{{prop_name}}.contains.foldIndexed(sql){ index, acc, value ->
+                acc.bind("{{prop_name}}_contains_${index}", "%" + escapeWildcard(value) + "%")
+            }
+            {{/if}}
+            {{#if (eq p.type 'number') ~}}
+            {{define "prop_name" (lower-camel p.name) ~}}
+            sql = input.{{prop_name}}.equalsTo.foldIndexed(sql){ index, acc, value ->
+                acc.bind("{{prop_name}}_equalsTo_${index}", value)
+            }
+            if (input.{{prop_name}}.greaterThan != null) {
+                sql = sql.bind("{{prop_name}}_greaterThan", input.{{prop_name}}.greaterThan)
+            }
+            if (input.{{prop_name}}.lessThan != null) {
+                sql = sql.bind("{{prop_name}}_lessThan", input.{{prop_name}}.lessThan)
+            }
+            {{/if}}
+            {{/each}}
+            sql
+        }
         .fetch()
         .all()
         .collectList()

@@ -1,0 +1,6 @@
+input StringSearchInput {
+  equalsTo: [String]
+  startsWith: [String]
+  endsWith: [String]
+  contains: [String]
+}

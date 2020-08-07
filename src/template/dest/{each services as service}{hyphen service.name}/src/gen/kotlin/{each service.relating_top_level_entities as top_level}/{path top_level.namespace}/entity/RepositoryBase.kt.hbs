@@ -1,0 +1,13 @@
+package {{top_level.namespace}}.entity
+
+import org.springframework.data.r2dbc.core.DatabaseClient
+
+open class RepositoryBase(
+    private val db: DatabaseClient
+) {
+    fun escapeWildcard(value: String, escapeSequence: String = "\\"): String =
+        value
+        .replace(escapeSequence, escapeSequence + escapeSequence)
+        .replace("%", escapeSequence + "%")
+        .replace("_", escapeSequence + "_")
+}

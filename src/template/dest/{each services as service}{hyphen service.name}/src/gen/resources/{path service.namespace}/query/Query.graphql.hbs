@@ -3,11 +3,18 @@
 #
 type Query {
   {{#each service.relating_top_level_entities as |top_level| ~}}
-  {{lower-camel (plural top_level.name)}}: [{{upper-camel top_level.name}}]!
+  {{lower-camel (plural top_level.name)}}(
+    {{#each top_level.stored_properties as |p|}}
+    {{lower-camel p.name}}: {{p.class_name}}{{if (eq p.type 'boolean') '' 'SearchInput'}}
+    {{/each}}
+  ): [{{upper-camel top_level.name}}]!
+  {{define "primary_keys" (filter top_level.properties '@it.primary_key') ~}}
+  {{#if primary_keys ~}}
   {{lower-camel top_level.name}}(
-    {{#each (filter top_level.properties '@it.primary_key') as |pk| ~}}
-    {{lower-camel pk.name}}: {{upper-camel pk.class_name}}!{{#unless @last}},{{/unless}}
+    {{#each primary_keys as |pk| ~}}
+    {{lower-camel pk.name}}: {{upper-camel pk.class_name}}!
     {{/each}}
   ): {{upper-camel top_level.name}}
+  {{/if}}
   {{/each}}
 }

@@ -1,0 +1,38 @@
+package {{top_level.namespace}}.entity.{{lower-snake top_level.name}}
+
+import {{service.namespace}}.query.*
+import laplacian.tutorial.api.util.*
+
+{{define "input_class_name" (concat (upper-camel entity.name) 'SearchInput') ~}}
+data class {{input_class_name}} (
+    {{#each entity.stored_properties as |property| ~}}
+    {{#if (eq property.type "boolean") ~}}
+    val {{lower-camel property.name}}: Boolean? = null{{#unless @last}},{{/unless}}
+    {{else}}
+    val {{lower-camel property.name}}: {{property.class_name}}SearchInput = {{property.class_name}}SearchInput(){{#unless @last}},{{/unless}}
+    {{/if}}
+    {{/each}}
+) {
+    fun isEmpty(): Boolean =
+        {{#each entity.stored_properties as |property| ~}}
+        {{#if (eq property.type "boolean") ~}}
+        {{lower-camel property.name}} == null{{#unless @last}} &&{{/unless}}
+        {{else}}
+        {{lower-camel property.name}}.isEmpty(){{#unless @last}} &&{{/unless}}
+        {{/if}}
+        {{/each}}
+
+    companion object {
+        fun from(args: Map<String, Any?>): {{input_class_name}} {
+            return {{input_class_name}}(
+                {{#each entity.stored_properties as |property| ~}}
+                {{#if (eq property.type "boolean") ~}}
+                {{lower-camel property.name}} = args.getAs<Boolean>("{{lower-camel property.name}}"){{#unless @last}},{{/unless}}
+                {{else}}
+                {{lower-camel property.name}} = {{property.class_name}}SearchInput.from(args["{{lower-camel property.name}}"]){{#unless @last}},{{/unless}}
+                {{/if}}
+                {{/each}}
+            )
+        }
+    }
+}

@@ -2,8 +2,10 @@
 package {{package}}
 
 {{#each service.relating_top_level_entities as |top_level| ~}}
-import {{top_level.namespace}}.entity.{{lower-snake top_level.name}}.{{top_level.class_name}}Entity
-import {{top_level.namespace}}.entity.{{lower-snake top_level.name}}.{{top_level.class_name}}Repository
+{{define "base_package" (concat top_level.namespace '.entity.' (lower-snake top_level.name)) ~}}
+import {{base_package}}.{{top_level.class_name}}Entity
+import {{base_package}}.{{top_level.class_name}}Repository
+import {{base_package}}.{{top_level.class_name}}SearchInput
 {{/each}}
 import org.springframework.stereotype.Component
 import graphql.schema.idl.RuntimeWiring
@@ -29,9 +31,9 @@ class QueryResolver(
             {{/each}}
         })
 
-    fun {{lower-camel (plural top_level.name)}}(): CompletableFuture<List<{{entity_class_name}}>> =
+    fun {{lower-camel (plural top_level.name)}}(context: DataFetchingEnvironment): CompletableFuture<List<{{entity_class_name}}>> =
         {{lower-camel top_level.name}}Repository
-        .load{{upper-camel (plural top_level.name)}}()
+        .find{{upper-camel (plural top_level.name)}}({{upper-camel top_level.name}}SearchInput.from(context.arguments))
         .thenApply{ it.toList() }
     {{/each}}
 
@@ -40,7 +42,7 @@ class QueryResolver(
         {{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
         {{define 'plural_name' (lower-camel (plural top_level.name)) ~}}
         {{define 'singular_name' (lower-camel top_level.name) ~}}
-        .dataFetcher("{{plural_name}}") { {{plural_name}}() }
+        .dataFetcher("{{plural_name}}") { env -> {{plural_name}}(env) }
         .dataFetcher("{{singular_name}}") { env -> {{singular_name}}(env)}
         {{/each}}
     )
