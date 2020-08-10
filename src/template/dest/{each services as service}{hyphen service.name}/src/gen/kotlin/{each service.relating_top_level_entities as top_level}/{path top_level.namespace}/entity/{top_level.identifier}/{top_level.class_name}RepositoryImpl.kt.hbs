@@ -1,14 +1,13 @@
 {{#define "repository_name"}}{{top_level.class_name}}Repository{{/define}}
 {{#define "package"}}{{top_level.namespace}}.entity.{{lower-snake top_level.name}}{{/define}}
 package {{package}}
-import kotlinx.coroutines.future.future
-import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
 import org.springframework.data.r2dbc.core.DatabaseClient
 import java.util.concurrent.CompletableFuture
 import laplacian.tutorial.entity.RepositoryBase
 {{#each top_level.relating_top_level_entities as |other| ~}}
 import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}Entity
+import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}SearchInput
 {{/each}}
 
 /**
@@ -55,53 +54,10 @@ class {{repository_name}}Impl(
           {{define "col_name" (column-name p.name) ~}}
           {{define "table_name" (table-name entity.name) ~}}
           {{#if (eq p.type 'string') ~}}
-          --${if (input.{{prop_name}}.equalsTo.isEmpty()) "" else """
-          (
-          --${input.{{prop_name}}.equalsTo.mapIndexed { index, _ -> """
-            {{table_name}}.{{col_name}} = :{{prop_name}}_equalsTo_${index}
-          --"""}.joinToString("\nOR\n")}
-          ) AND
-          --"""}
-          --${if (input.{{prop_name}}.startsWith.isEmpty()) "" else """
-          (
-          --${input.{{prop_name}}.startsWith.mapIndexed { index, _ -> """
-            {{table_name}}.{{col_name}} LIKE :{{prop_name}}_startsWith_${index} ESCAPE '\'
-          --"""}.joinToString("\nOR\n")}
-          ) AND
-          --"""}
-          --${if (input.{{prop_name}}.endsWith.isEmpty()) "" else """
-          (
-          --${input.{{prop_name}}.endsWith.mapIndexed { index, _ -> """
-            {{table_name}}.{{col_name}} LIKE :{{prop_name}}_endsWith_${index} ESCAPE '\'
-          --"""}.joinToString("\nOR\n")}
-          ) AND
-          --"""}
-          --${if (input.{{prop_name}}.contains.isEmpty()) "" else """
-          (
-          --${input.{{prop_name}}.contains.mapIndexed { index, _ -> """
-            {{table_name}}.{{col_name}} LIKE :{{prop_name}}_contains${index} ESCAPE '\'
-          --"""}.joinToString("\nOR\n")}
-          ) AND
-          --"""}
+          ${searchConditionForStringField(input.{{prop_name}}, "{{table_name}}.{{col_name}}", "{{prop_name}}")}
           {{/if}}
           {{#if (eq p.type 'number') ~}}
-          -- ${if (input.{{prop_name}}.equalsTo.isEmpty()) "" else """
-          (
-          -- ${input.{{prop_name}}.equalsTo.mapIndexed { index, _ -> """
-            {{table_name}}.{{col_name}} = :{{prop_name}}_equalsTo_${index}
-          --"""}.joinToString("\nOR\n")}
-          ) AND
-          --"""}
-          -- ${if (input.{{prop_name}}.greaterThan == null) "" else """
-          (
-            {{table_name}}.{{col_name}} >= :{{prop_name}}_greaterThan
-          ) AND
-          --"""}
-          -- ${if (input.{{prop_name}}.lessThan == null) "" else """
-          (
-            {{table_name}}.{{col_name}} <= :{{prop_name}}_lessThan
-          ) AND
-          --"""}
+          ${searchConditionForIntField(input.{{prop_name}}, "{{table_name}}.{{col_name}}", "{{prop_name}}")}
           {{/if}}
           {{/each}}
         --"""}
@@ -109,32 +65,12 @@ class {{repository_name}}Impl(
         .let {
             var sql = it
             {{#each entity.stored_properties as |p| ~}}
-            {{#if (eq p.type 'string') ~}}
             {{define "prop_name" (lower-camel p.name) ~}}
-            sql = input.{{prop_name}}.equalsTo.foldIndexed(sql){ index, acc, value ->
-                acc.bind("{{prop_name}}_equalsTo_${index}", value)
-            }
-            sql = input.{{prop_name}}.startsWith.foldIndexed(sql){ index, acc, value ->
-                acc.bind("{{prop_name}}_startsWith_${index}", escapeWildcard(value) + "%")
-            }
-            sql = input.{{prop_name}}.endsWith.foldIndexed(sql){ index, acc, value ->
-                acc.bind("{{prop_name}}_endsWith_${index}", "%" + escapeWildcard(value))
-            }
-            sql = input.{{prop_name}}.contains.foldIndexed(sql){ index, acc, value ->
-                acc.bind("{{prop_name}}_contains_${index}", "%" + escapeWildcard(value) + "%")
-            }
+            {{#if (eq p.type 'string') ~}}
+            sql = embedSearchParamsForStringField(sql, input.{{prop_name}}, "{{prop_name}}")
             {{/if}}
             {{#if (eq p.type 'number') ~}}
-            {{define "prop_name" (lower-camel p.name) ~}}
-            sql = input.{{prop_name}}.equalsTo.foldIndexed(sql){ index, acc, value ->
-                acc.bind("{{prop_name}}_equalsTo_${index}", value)
-            }
-            if (input.{{prop_name}}.greaterThan != null) {
-                sql = sql.bind("{{prop_name}}_greaterThan", input.{{prop_name}}.greaterThan)
-            }
-            if (input.{{prop_name}}.lessThan != null) {
-                sql = sql.bind("{{prop_name}}_lessThan", input.{{prop_name}}.lessThan)
-            }
+            sql = embedSearchParamsForIntField(sql, input.{{prop_name}}, "{{prop_name}}")
             {{/if}}
             {{/each}}
             sql
@@ -197,20 +133,24 @@ class {{repository_name}}Impl(
 
     {{#each entity.stored_relationships as |r| ~}}
     {{define "reference_entity" r.reference_entity ~}}
-    {{define "reference_entity_class_name" (concat reference_entity.class_name 'Entity') ~}}
-    {{define "result_type" (if r.multiple
-        (concat 'List<' reference_entity_class_name '>')
-        reference_entity_class_name
-    ) ~}}
+    {{define "reference_entity_name" (upper-camel r.reference_entity.name) ~}}
+    {{define "reference_entity_class_name" (concat reference_entity_name 'Entity') ~}}
+    {{define "reference_entity_search_input_name" (concat reference_entity_name 'SearchInput') ~}}
+    {{define "result_type" (if r.multiple (concat 'List<' reference_entity_class_name '>') reference_entity_class_name) ~}}
     {{define "loader_method_name" (concat 'load' (upper-camel r.name) 'Of' (upper-camel entity.name)) ~}}
     {{define "derived_key_prefix" reference_entity.owned_by.name ~}}
     /**
      * Loads {{r.name}} of this {{entity.name}}.
      */
-    override fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, {{result_type}}>> =
+    override fun {{loader_method_name}}(
+        inputs: Map<{{reference_entity_search_input_name}}, Set<{{entity_class_name}}>>
+    ): CompletableFuture<Map<Pair<{{reference_entity_search_input_name}}, {{entity_class_name}}>, {{result_type}}>> =
         db.execute(
         """
         SELECT
+          ${if (inputs.isEmpty()) "" else """
+          _condition_.id AS "_condition_id_",
+          """}
           {{#each entity.primary_keys as |pk| ~}}
           {{define 'is_last' (and @last (not reference_entity.primary_keys)) ~}}
           {{#if r.aggregate ~}}
@@ -225,6 +165,9 @@ class {{repository_name}}Impl(
           {{table-name reference_entity.name}}.{{column-name pk.name}} AS "{{column-name r.name}}.{{column-name pk.name}}"{{if @last '' ','}}
           {{/each}}
         FROM
+          ${if (inputs.isEmpty()) "" else """
+          (VALUES (0), (1), (2), (3), (4), (5)) _condition_(id),
+          """}
           {{table-name entity.name}},
           {{table-name reference_entity.name}}
         WHERE
@@ -240,44 +183,87 @@ class {{repository_name}}Impl(
           {{/each}}
         {{/if}}
         AND (
-        -- ${keys.mapIndexed{ index, _ -> """
-        {{#if r.aggregate ~}}
+        ${inputs.entries.mapIndexed{ i, (input, keys) -> """
+          (${keys.mapIndexed{ index, _ -> """
+          {{#if r.aggregate ~}}
           {{#each entity.primary_keys as |pk| ~}}
-        {{#unless @first}}
-        AND
-        {{/unless}}
-          {{table-name reference_entity.name}}.{{column-name (concat derived_key_prefix ' ' pk.name)}} = :{{lower-camel derived_key_prefix}}{{upper-camel pk.name}}${index}
+          {{if @first '' 'AND'}}
+            {{table-name reference_entity.name}}.{{column-name (concat derived_key_prefix ' ' pk.name)}} = :{{lower-camel derived_key_prefix}}{{upper-camel pk.name}}_${i}_${index}
           {{/each}}
-        {{else}}
+          {{else}}
           {{#each r.mappings as |mapping| ~}}
-        {{#unless @first}}
-        AND
-        {{/unless}}
-          {{table-name reference_entity.name}}.{{column-name mapping.to}} = :{{lower-camel mapping.from}}${index}
+          {{if @first '' 'AND'}}
+            {{table-name reference_entity.name}}.{{column-name mapping.to}} = :{{lower-camel mapping.from}}_${i}_${index}
           {{/each}}
-        {{/if}}
-        -- """}.joinToString("\nOR\n")}
-        )
-        """.trimMargin())
-        .let { sql ->
-            keys.foldIndexed(sql){ index, acc, key ->
-                acc
-                {{#if r.aggregate ~}}
-                {{#each entity.primary_keys as |pk| ~}}
-                {{define 'prop_name' (concat (lower-camel derived_key_prefix) (upper-camel pk.name) '${index}') ~}}
-                .bind("{{prop_name}}", key.{{lower-camel pk.name}})
-                {{/each}}
-                {{else}}
-                {{#each r.mappings as |mapping|}}
-                .bind("{{lower-camel mapping.from}}${index}", key.{{lower-camel mapping.from}})
-                {{/each}}
+          {{/if}}
+          -- """}.joinToString("\nOR\n")}
+          )
+          AND
+            ${if (input.isEmpty()) "" else """
+            {{#each reference_entity.stored_properties as |p| ~}}
+            {{define "prop_name" (lower-camel p.name) ~}}
+            {{define "col_name" (column-name p.name) ~}}
+            {{define "table_name" (table-name reference_entity.name) ~}}
+            {{#if (eq p.type 'string') ~}}
+            ${searchConditionForStringField(input.{{prop_name}}, "{{table_name}}.{{col_name}}", "{{prop_name}}_${i}_")}
+            {{/if}}
+            {{#if (eq p.type 'number') ~}}
+            ${searchConditionForIntField(input.{{prop_name}}, "{{table_name}}.{{col_name}}", "{{prop_name}}_${i}_")}
+            {{/if}}
+            {{/each}}
+            """}
+             _condition_.id = ${i}
+        """}.joinToString("\nOR\n")}
+         )
+        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), "").also{println(it)})
+        .let {
+            var sql = it
+            inputs.entries.mapIndexed{ i, (input, keys) ->
+                sql = keys.foldIndexed(sql) { index, acc, key ->
+                    acc
+                    {{#if r.aggregate ~}}
+                    {{#each entity.primary_keys as |pk| ~}}
+                    {{define 'prop_name' (concat (lower-camel derived_key_prefix) (upper-camel pk.name) '_${i}_${index}') ~}}
+                    .bind("{{prop_name}}", key.{{lower-camel pk.name}})
+                    {{/each}}
+                    {{else}}
+                    {{#each r.mappings as |mapping|}}
+                    .bind("{{lower-camel mapping.from}}_${i}_${index}", key.{{lower-camel mapping.from}})
+                    {{/each}}
+                    {{/if}}
+                }
+                {{#each reference_entity.stored_properties as |p| ~}}
+                {{define "prop_name" (lower-camel p.name) ~}}
+                {{define "col_name" (column-name p.name) ~}}
+                {{define "table_name" (table-name reference_entity.name) ~}}
+                {{#if (eq p.type 'string') ~}}
+                sql = embedSearchParamsForStringField(sql, input.{{prop_name}}, "{{prop_name}}_${i}_")
                 {{/if}}
+                {{#if (eq p.type 'number') ~}}
+                sql = embedSearchParamsForIntField(sql, input.{{prop_name}}, "{{prop_name}}_${i}_")
+                {{/if}}
+                {{/each}}
             }
+            sql
         }
         .fetch()
         .all()
         .collectList()
-        .map { {{entity_class_name}}.fromRecords(it).map{ it to it.{{lower-camel r.name}} }.toMap() }
+        .map { records ->
+            {{entity_class_name}}.fromRecordsGrouping(records) { record ->
+                val searchConditionIndex = record["_condition_id_"]
+                if (searchConditionIndex == null || searchConditionIndex !is Int) {
+                    {{reference_entity_search_input_name}}()
+                }
+                else {
+                    inputs.keys.toList().getOrElse(searchConditionIndex){ {{reference_entity_search_input_name}}() }
+                }
+            }.flatMap { (searchCondition, {{lower-camel (plural entity.name)}}) ->
+                {{lower-camel (plural entity.name)}}.map { {{lower-camel entity.name}} -> searchCondition to {{lower-camel entity.name}} }
+            }
+            .map { it to it.second.{{lower-camel r.name}} }
+            .toMap()
+        }
         .toFuture()
     {{/each}}
 {{/inline}}

@@ -4,6 +4,7 @@ package {{package}}
 import java.util.concurrent.CompletableFuture
 {{#each top_level.relating_top_level_entities as |other| ~}}
 import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}Entity
+import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}SearchInput
 {{/each}}
 
 typealias Records = List<Record>
@@ -42,7 +43,8 @@ interface {{repository_class_name}} {
     fun {{loader_method_name}}(keys: {{entity_set}}): CompletableFuture<{{entity_set}}>
 
     {{#each entity.stored_relationships as |r| ~}}
-    {{define "reference_entity_class_name" (concat (upper-camel r.reference_entity.name) 'Entity') ~}}
+    {{define "reference_entity_name" (upper-camel r.reference_entity.name) ~}}
+    {{define "reference_entity_class_name" (concat reference_entity_name 'Entity') ~}}
     {{define "result_type" (if r.multiple
         (concat 'List<' reference_entity_class_name '>')
         reference_entity_class_name
@@ -51,7 +53,7 @@ interface {{repository_class_name}} {
     /**
      * Loads {{r.name}}
      */
-    fun {{loader_method_name}}(keys: Set<{{entity_class_name}}>): CompletableFuture<Map<{{entity_class_name}}, {{result_type}}>>
+    fun {{loader_method_name}}(inputs: Map<{{reference_entity_name}}SearchInput, Set<{{entity_class_name}}>>): CompletableFuture<Map<Pair<{{reference_entity_name}}SearchInput, {{entity_class_name}}>, {{result_type}}>>
     {{/each}}
 {{/inline}}
     {{#each top_level.aggregated_entities as |entity| ~}}

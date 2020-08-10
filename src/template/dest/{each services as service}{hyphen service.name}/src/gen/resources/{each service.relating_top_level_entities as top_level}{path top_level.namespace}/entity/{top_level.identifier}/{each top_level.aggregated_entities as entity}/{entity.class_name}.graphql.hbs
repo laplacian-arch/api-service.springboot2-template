@@ -23,6 +23,10 @@ type {{entity.class_name}} {
   #
   # {{trim r.description}}
   #
-  {{lower-camel r.identifier}}: {{>TYPE_OF_RERATIONSHIP relationship = r}}
+  {{lower-camel r.identifier}}(
+    {{#each r.reference_entity.stored_properties as |property| ~}}
+    {{lower-camel property.name}}: {{property.class_name}}{{if (eq property.type 'boolean') '' 'SearchInput'}}
+    {{/each}}
+  ): {{>TYPE_OF_RERATIONSHIP relationship = r}}
   {{/each}}
 }

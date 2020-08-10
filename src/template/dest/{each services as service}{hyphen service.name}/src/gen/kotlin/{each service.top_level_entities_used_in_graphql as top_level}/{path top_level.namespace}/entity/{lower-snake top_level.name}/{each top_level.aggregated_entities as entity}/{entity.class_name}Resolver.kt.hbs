@@ -8,7 +8,7 @@ package {{package}}
   relating_entity.namespace '.entity.' (lower-underscore relating_entity.name)
 )~}}
 import {{rel_namespace}}.{{relating_entity.class_name}}Entity
-import {{rel_namespace}}.{{relating_entity.class_name}}Resolver
+import {{rel_namespace}}.{{relating_entity.class_name}}SearchInput
 {{/each}}
 import org.dataloader.DataLoader
 import org.dataloader.DataLoaderRegistry
@@ -38,17 +38,16 @@ class {{entity.class_name}}Resolver(
     {{/each}}
 
     {{#each entity.stored_relationships as |relationship| ~}}
-    {{define "ref_type" (if relationship.multiple
-        (printf 'List<%sEntity>' relationship.reference_entity.class_name)
-        (printf '%sEntity' relationship.reference_entity.class_name)
-    )~}}
+    {{define "ref_class_name" relationship.reference_entity.class_name}}
+    {{define "ref_entity_class_name" (concat ref_class_name 'Entity')}}
+    {{define "ref_type" (if relationship.multiple (printf 'List<%s>' ref_entity_class_name) ref_entity_class_name) ~}}
     /**
      * Loads the {{relationship.name}} of this {{entity.name}}.
      */
     fun {{relationship.property_name}}(self: {{entity_class_name}}, context: DataFetchingEnvironment): CompletableFuture<{{ref_type}}> =
         context
-        .getDataLoader<{{entity_class_name}}, {{ref_type}}>({{upper-underscore relationship.property_name}})
-        .load(self)
+        .getDataLoader<Pair<{{ref_class_name}}SearchInput, {{entity_class_name}}>, {{ref_type}}>({{upper-underscore relationship.property_name}})
+        .load({{ref_class_name}}SearchInput.from(context.arguments) to self)
         {{#if relationship.multiple}}
         .thenApply<{{ref_type}}>{ it ?: emptyList() }
         {{/if}}
@@ -62,14 +61,17 @@ class {{entity.class_name}}Resolver(
         })
         {{#each entity.stored_relationships as |relationship| ~}}
         {{define "ref_entity" relationship.reference_entity ~}}
-        {{define "ref_entity_class_name" (concat (upper-camel ref_entity.name) 'Entity') ~}}
-        {{define "result_type" (if relationship.multiple
-          (concat 'List<' ref_entity_class_name '>')
-          ref_entity_class_name
-        ) ~}}
-        registry.register({{upper-underscore relationship.property_name}}, DataLoader.newMappedDataLoader<{{entity_class_name}}, {{result_type}}> { keys ->
+        {{define "ref_entity_name" (upper-camel ref_entity.name)}}
+        {{define "ref_entity_class_name" (concat ref_entity_name 'Entity') ~}}
+        {{define "result_type" (if relationship.multiple (concat 'List<' ref_entity_class_name '>') ref_entity_class_name) ~}}
+        registry.register({{upper-snake relationship.property_name}}, DataLoader.newMappedDataLoader<Pair<{{ref_entity_name}}SearchInput, {{entity_class_name}}>, {{result_type}}> { entries ->
+            val input = entries.fold(mutableMapOf<{{ref_entity_name}}SearchInput, MutableSet<{{entity_class_name}}>>()) { acc, ({{lower-camel ref_entity_name}}SearchInput, {{lname}}) ->
+                val {{plural lname}} = acc.getOrPut({{lower-camel ref_entity_name}}SearchInput) { mutableSetOf<{{entity_class_name}}>() }
+                {{plural lname}}.add({{lname}})
+                acc
+            }
             {{lname}}Repository
-            .load{{upper-camel relationship.property_name}}Of{{entity.class_name}}(keys)
+            .load{{upper-camel relationship.property_name}}Of{{entity.class_name}}(input)
         })
         {{/each}}
     }

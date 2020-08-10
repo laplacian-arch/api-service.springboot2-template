@@ -1,13 +1,109 @@
 package {{top_level.namespace}}.entity
 
 import org.springframework.data.r2dbc.core.DatabaseClient
+import {{service.namespace}}.query.IntSearchInput
+import {{service.namespace}}.query.StringSearchInput
 
 open class RepositoryBase(
     private val db: DatabaseClient
 ) {
+
+    fun searchConditionForIntField(
+      input: IntSearchInput, columnName: String, fieldName: String
+    ): String = """
+          ${if (input.equalsTo.isEmpty()) "" else """
+          (
+          --${input.equalsTo.mapIndexed { index, _ -> """
+            ${columnName} = :${fieldName}_equalsTo_${index}
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          --${if (input.greaterThan == null) "" else """
+          (
+            ${columnName} >= :${fieldName}_greaterThan
+          ) AND
+          --"""}
+          --${if (input.lessThan == null) "" else """
+          (
+            ${columnName} <= :${fieldName}_lessThan
+          ) AND
+          --"""}
+    """.trim()
+
+    fun embedSearchParamsForIntField(
+        sql: DatabaseClient.GenericExecuteSpec,
+        input: IntSearchInput,
+        fieldName: String
+    ): DatabaseClient.GenericExecuteSpec {
+        var result = input.equalsTo.foldIndexed(sql){ index, acc, value ->
+            acc.bind("${fieldName}_equalsTo_${index}", value)
+        }
+        if (input.greaterThan != null) {
+            result = result.bind("${fieldName}_greaterThan", input.greaterThan)
+        }
+        if (input.lessThan != null) {
+            result = result.bind("${fieldName}_lessThan", input.lessThan)
+        }
+        return result
+    }
+
+    fun searchConditionForStringField(
+      input: StringSearchInput, columnName: String, prefix: String
+    ): String = """
+          --${if (input.equalsTo.isEmpty()) "" else """
+          (
+          --${input.equalsTo.mapIndexed { index, _ -> """
+            ${columnName} = :${prefix}_equalsTo_${index}
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          --${if (input.startsWith.isEmpty()) "" else """
+          (
+          --${input.startsWith.mapIndexed { index, _ -> """
+            ${columnName} LIKE :${prefix}_startsWith_${index} ESCAPE '\'
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          --${if (input.endsWith.isEmpty()) "" else """
+          (
+          --${input.endsWith.mapIndexed { index, _ -> """
+            ${columnName} LIKE :${prefix}_endsWith_${index} ESCAPE '\'
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+          --${if (input.contains.isEmpty()) "" else """
+          (
+          --${input.contains.mapIndexed { index, _ -> """
+            ${columnName} LIKE :${prefix}_contains_${index} ESCAPE '\'
+          --"""}.joinToString("\nOR\n")}
+          ) AND
+          --"""}
+    """.trim()
+
+    fun embedSearchParamsForStringField(
+        sql: DatabaseClient.GenericExecuteSpec,
+        input: StringSearchInput,
+        fieldName: String
+    ): DatabaseClient.GenericExecuteSpec {
+        var result = input.equalsTo.foldIndexed(sql){ index, acc, value ->
+            acc.bind("${fieldName}_equalsTo_${index}", value)
+        }
+        result = input.startsWith.foldIndexed(result){ index, acc, value ->
+            acc.bind("${fieldName}_startsWith_${index}", escapeWildcard(value) + "%")
+        }
+        result = input.endsWith.foldIndexed(result){ index, acc, value ->
+            acc.bind("${fieldName}_endsWith_${index}", "%" + escapeWildcard(value))
+        }
+        result = input.contains.foldIndexed(result){ index, acc, value ->
+            acc.bind("${fieldName}_contains_${index}", "%" + escapeWildcard(value) + "%")
+        }
+        return result
+    }
+
     fun escapeWildcard(value: String, escapeSequence: String = "\\"): String =
         value
         .replace(escapeSequence, escapeSequence + escapeSequence)
         .replace("%", escapeSequence + "%")
         .replace("_", escapeSequence + "_")
 }
+
