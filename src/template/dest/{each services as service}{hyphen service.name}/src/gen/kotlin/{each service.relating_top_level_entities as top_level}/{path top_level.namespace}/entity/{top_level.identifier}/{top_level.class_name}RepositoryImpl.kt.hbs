@@ -166,7 +166,7 @@ class {{repository_name}}Impl(
           {{/each}}
         FROM
           ${if (inputs.isEmpty()) "" else """
-          (VALUES (0), (1), (2), (3), (4), (5)) _condition_(id),
+          (VALUES ${inputs.entries.mapIndexed{ i, _ -> "(${i})"}.joinToString(", ")}) _condition_(id),
           """}
           {{table-name entity.name}},
           {{table-name reference_entity.name}}
