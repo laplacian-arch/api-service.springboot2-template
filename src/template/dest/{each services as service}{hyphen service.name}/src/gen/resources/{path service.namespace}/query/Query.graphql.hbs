@@ -8,6 +8,11 @@ type Query {
     {{lower-camel p.name}}: {{p.class_name}}{{if (eq p.type 'boolean') '' 'SearchInput'}}
     {{/each}}
   ): [{{upper-camel top_level.name}}]!
+  numberOf{{upper-camel (plural top_level.name)}}(
+    {{#each top_level.stored_properties as |p|}}
+    {{lower-camel p.name}}: {{p.class_name}}{{if (eq p.type 'boolean') '' 'SearchInput'}}
+    {{/each}}
+  ): Int!
   {{define "primary_keys" (filter top_level.properties '@it.primary_key') ~}}
   {{#if primary_keys ~}}
   {{lower-camel top_level.name}}(

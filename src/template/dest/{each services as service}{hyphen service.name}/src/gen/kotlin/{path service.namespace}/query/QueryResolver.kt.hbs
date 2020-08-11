@@ -35,6 +35,10 @@ class QueryResolver(
         {{lower-camel top_level.name}}Repository
         .find{{upper-camel (plural top_level.name)}}({{upper-camel top_level.name}}SearchInput.from(context.arguments))
         .thenApply{ it.toList() }
+
+    fun numberOf{{upper-camel (plural top_level.name)}}(context: DataFetchingEnvironment): CompletableFuture<Long> =
+        {{lower-camel top_level.name}}Repository
+        .count{{upper-camel (plural top_level.name)}}({{upper-camel top_level.name}}SearchInput.from(context.arguments))
     {{/each}}
 
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
@@ -43,6 +47,7 @@ class QueryResolver(
         {{define 'plural_name' (lower-camel (plural top_level.name)) ~}}
         {{define 'singular_name' (lower-camel top_level.name) ~}}
         .dataFetcher("{{plural_name}}") { env -> {{plural_name}}(env) }
+        .dataFetcher("numberOf{{upper-camel plural_name}}") { env -> numberOf{{upper-camel plural_name}}(env) }
         .dataFetcher("{{singular_name}}") { env -> {{singular_name}}(env)}
         {{/each}}
     )

@@ -23,6 +23,7 @@ class {{repository_name}}Impl(
     {{define "search_input_class_name" (concat (upper-camel entity.name) 'SearchInput') ~}}
     {{define "loader_method_name" (concat 'load' (upper-camel plural_name)) ~}}
     {{define "finder_method_name" (concat 'find' (upper-camel plural_name)) ~}}
+    {{define "counter_method_name" (concat 'count' (upper-camel plural_name)) ~}}
     {{define "fqn" entity.fqn ~}}
     {{#each data_accesses as |data_access| ~}}
     {{#if (eq data_access.entity.fqn fqn) ~}}
@@ -33,7 +34,7 @@ class {{repository_name}}Impl(
     {{/each}}
 
     /**
-     * Loads {{plural_name}}.
+     * Finds {{plural_name}}.
      */
     override fun {{finder_method_name}}(input: {{search_input_class_name}}): CompletableFuture<Set<{{entity_class_name}}>> =
         db.execute(
@@ -45,9 +46,44 @@ class {{repository_name}}Impl(
           {{#each entity.primary_keys as |pk| ~}}
           {{lower-snake pk.name}}{{#unless @last}},{{/unless}}
           {{/each}}
+        ${queryOf{{upper-camel finder_method_name}}(input)}
+        """.trim())
+        .let { bindParamsOf{{upper-camel finder_method_name}}Query(it, input) }
+        .fetch()
+        .all()
+        .collectList()
+        .map { {{entity_class_name}}.fromRecords(it).toSet() }
+        .toFuture()
+
+    override fun {{counter_method_name}}(input: {{search_input_class_name}}): CompletableFuture<Long> =
+        db
+        .execute("SELECT count(*) AS count ${queryOf{{upper-camel finder_method_name}}(input)}")
+        .let { bindParamsOf{{upper-camel finder_method_name}}Query(it, input) }
+        .fetch()
+        .first()
+        .map{ it["count"] as Long }
+        .toFuture()
+
+    fun bindParamsOf{{upper-camel finder_method_name}}Query(
+        sql: DatabaseClient.GenericExecuteSpec, input: {{search_input_class_name}}
+    ): DatabaseClient.GenericExecuteSpec {
+        var result = sql
+        {{#each entity.stored_properties as |p| ~}}
+        {{define "prop_name" (lower-camel p.name) ~}}
+        {{#if (eq p.type 'string') ~}}
+        result = embedSearchParamsForStringField(result, input.{{prop_name}}, "{{prop_name}}")
+        {{/if}}
+        {{#if (eq p.type 'number') ~}}
+        result = embedSearchParamsForIntField(result, input.{{prop_name}}, "{{prop_name}}")
+        {{/if}}
+        {{/each}}
+        return result
+    }
+
+    fun queryOf{{upper-camel finder_method_name}}(input: {{search_input_class_name}}): String = """
         FROM
           {{table-name entity.name}}
-        --${if (input.isEmpty()) "" else """
+        ${if (input.isEmpty()) "" else """
         WHERE
           {{#each entity.stored_properties as |p| ~}}
           {{define "prop_name" (lower-camel p.name) ~}}
@@ -60,26 +96,8 @@ class {{repository_name}}Impl(
           ${searchConditionForIntField(input.{{prop_name}}, "{{table_name}}.{{col_name}}", "{{prop_name}}")}
           {{/if}}
           {{/each}}
-        --"""}
-        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), ""))
-        .let {
-            var sql = it
-            {{#each entity.stored_properties as |p| ~}}
-            {{define "prop_name" (lower-camel p.name) ~}}
-            {{#if (eq p.type 'string') ~}}
-            sql = embedSearchParamsForStringField(sql, input.{{prop_name}}, "{{prop_name}}")
-            {{/if}}
-            {{#if (eq p.type 'number') ~}}
-            sql = embedSearchParamsForIntField(sql, input.{{prop_name}}, "{{prop_name}}")
-            {{/if}}
-            {{/each}}
-            sql
-        }
-        .fetch()
-        .all()
-        .collectList()
-        .map { {{entity_class_name}}.fromRecords(it).toSet() }
-        .toFuture()
+        """}
+        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), "")
 
     /**
      * Loads {{plural_name}} having the given keys.
