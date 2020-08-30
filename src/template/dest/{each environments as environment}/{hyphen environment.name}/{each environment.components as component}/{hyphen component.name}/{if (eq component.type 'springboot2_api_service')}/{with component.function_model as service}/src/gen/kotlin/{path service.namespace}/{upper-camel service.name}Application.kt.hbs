@@ -1,0 +1,27 @@
+{{#define "class_name"}}{{upper-camel service.name}}Application{{/define}}
+package {{service.namespace}}
+
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.annotation.ComponentScan
+
+/**
+ * The launcher class for the {{service.name}} service.
+ */
+@SpringBootApplication
+@ComponentScan(basePackages = [
+    {{define 'namespaces' (unique
+        (map service.top_level_entities_used_in_graphql '@it.namespace')
+    ) ~}}
+    {{#each namespaces as |namespace|~}}
+    "{{namespace}}"{{#unless @last}},{{/unless}}
+    {{/each}}
+])
+class {{class_name}}
+
+/**
+ * The entry point of this service.
+ */
+fun main(args: Array<String>) {
+    SpringApplication.run({{class_name}}::class.java, *args)
+}

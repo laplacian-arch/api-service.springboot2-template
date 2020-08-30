@@ -1,6 +1,0 @@
-# {{define 'service_name' (hyphen service.name)}}
-FROM adoptopenjdk:11-jdk-hotspot
-RUN mkdir /app
-COPY ./build/libs/{{sesrvice_name}}*.jar /app/api.jar
-COPY ./entrypoint.sh /app/entrypoint.sh
-ENTRYPOINT ["/app/entrypoint.sh"]
