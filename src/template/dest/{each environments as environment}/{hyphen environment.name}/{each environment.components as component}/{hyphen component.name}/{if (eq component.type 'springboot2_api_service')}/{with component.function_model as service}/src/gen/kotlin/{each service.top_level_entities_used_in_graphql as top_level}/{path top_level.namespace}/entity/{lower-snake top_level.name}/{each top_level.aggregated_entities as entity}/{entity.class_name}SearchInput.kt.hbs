@@ -1,7 +1,7 @@
 package {{top_level.namespace}}.entity.{{lower-snake top_level.name}}
 
 import {{service.namespace}}.query.*
-import laplacian.tutorial.api.util.*
+import {{service.namespace}}.util.*
 
 {{define "input_class_name" (concat (upper-camel entity.name) 'SearchInput') ~}}
 data class {{input_class_name}} (

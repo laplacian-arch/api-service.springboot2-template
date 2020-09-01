@@ -42,7 +42,7 @@ class GraphqlConfig {
     ): GraphQLSchema {
         val parser = SchemaParser()
         val schema = context
-            .getResources("classpath*:/laplacian/**/*.graphql")
+            .getResources("classpath*:/**/*.graphql")
             .map {
                 StreamUtils.copyToString(it.inputStream, StandardCharsets.UTF_8)
             }
