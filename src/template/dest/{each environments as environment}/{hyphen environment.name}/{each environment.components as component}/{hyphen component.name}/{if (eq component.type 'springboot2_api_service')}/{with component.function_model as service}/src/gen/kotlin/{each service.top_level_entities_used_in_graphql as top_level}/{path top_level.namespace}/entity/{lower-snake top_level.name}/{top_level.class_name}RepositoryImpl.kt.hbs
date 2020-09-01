@@ -4,7 +4,7 @@ package {{package}}
 import org.springframework.stereotype.Component
 import org.springframework.data.r2dbc.core.DatabaseClient
 import java.util.concurrent.CompletableFuture
-import laplacian.tutorial.entity.RepositoryBase
+import {{top_level.namespace}}.entity.RepositoryBase
 {{#each top_level.relating_top_level_entities as |other| ~}}
 import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}Entity
 import {{other.namespace}}.entity.{{lower-snake other.name}}.{{upper-camel other.name}}SearchInput
