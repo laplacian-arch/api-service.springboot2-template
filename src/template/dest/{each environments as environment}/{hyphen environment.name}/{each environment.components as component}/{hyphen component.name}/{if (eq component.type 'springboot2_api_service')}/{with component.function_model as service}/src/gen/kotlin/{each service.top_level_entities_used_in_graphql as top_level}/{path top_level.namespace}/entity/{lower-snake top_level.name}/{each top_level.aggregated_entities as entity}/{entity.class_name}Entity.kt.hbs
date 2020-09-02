@@ -36,12 +36,12 @@ class {{entity_class_name}} {
     {{#if p.optional ~}}
     {{define 'initial_value' (case
       p.default_value      p.default_value
-      (eq p.nullable)      'null'
+      p.nullable          'null'
       (eq p.type "number") '0'
       (eq p.type "string") '""'
       ''
     ) ~}}
-    var {{p.property_name}}: {{p.class_name}} = {{initial_value}}
+    var {{p.property_name}}: {{p.class_name}}{{if p.nullable '?'}} = {{initial_value}}
     {{else}}
     {{#if (or (eq p.type 'boolean') (eq p.type 'number')) ~}}
     private var _{{p.property_name}}: {{p.class_name}}? = null
@@ -119,14 +119,17 @@ class {{entity_class_name}} {
             record: Record,
             prefix: String = ""
         ): {{entity_class_name}} = {{entity_class_name}}().apply {
-            {{#if (any properties '(eq @it.type "string")') ~}}
+            {{#if (any properties '(and (eq @it.type "string") (not @it.nullable))') ~}}
             val nonNullString = {key: String, value: Any? ->
                 value?.toString() ?: throw IllegalArgumentException(
                     "$key must not be null: $record"
                 )
             }
             {{/if}}
-            {{#if (any properties '(eq @it.type "number")') ~}}
+            {{#if (any properties '(and (eq @it.type "string") @it.nullable)') ~}}
+            val nullableString = {_: String, value: Any? -> value?.toString()}
+            {{/if}}
+            {{#if (any properties '(and (eq @it.type "number") (not @it.nullable))') ~}}
             val nonNullInteger = {key: String, value: Any? ->
                 if (value is Int)
                   value
@@ -135,6 +138,9 @@ class {{entity_class_name}} {
                     "$key must not be null: $record"
                   )
             }
+            {{#if (any properties '(and (eq @it.type "number") @it.nullable)') ~}}
+            val nullableInteger = {_: String, value: Any? -> if (value is Int) value else value?.toString()?.toInt()}
+            {{/if}}
             {{/if}}
             {{#if (any properties '(eq @it.type "boolean")') ~}}
             val nonNullBoolean = {key: String, value: Any? ->
@@ -145,20 +151,22 @@ class {{entity_class_name}} {
                 when(k) {
                     {{#each entity.owner.primary_keys as |pk| ~}}
                     {{define 'derived_pk_name' (printf '%s_%s' entity.owned_by.name pk.name) ~}}
+                    {{define 'nullable' (if pk.nullable 'nullable' 'nonNull') ~}}
                     {{define 'converter' (case
-                      (eq pk.type "string") "nonNullString(k, v)"
-                      (eq pk.type "number") "nonNullInteger(k, v)"
-                      (eq pk.type "boolean") "nonNullBoolean(k, v)"
+                      (eq pk.type "string") "String(k, v)"
+                      (eq pk.type "number") "Integer(k, v)"
+                      (eq pk.type "boolean") "Boolean(k, v)"
                     ) ~}}
-                    prefix + "{{lower-snake derived_pk_name}}" -> {{lower-camel derived_pk_name}} = {{converter}}
+                    prefix + "{{lower-snake derived_pk_name}}" -> {{lower-camel derived_pk_name}} = {{nullable}}{{converter}}
                     {{/each}}
                     {{#each entity.stored_properties as |p| ~}}
+                    {{define 'nullable' (if p.nullable 'nullable' 'nonNull') ~}}
                     {{define 'converter' (case
-                      (eq p.type "string") "nonNullString(k, v)"
-                      (eq p.type "number") "nonNullInteger(k, v)"
-                      (eq p.type "boolean") "nonNullBoolean(k, v)"
+                      (eq p.type "string") "String(k, v)"
+                      (eq p.type "number") "Integer(k, v)"
+                      (eq p.type "boolean") "Boolean(k, v)"
                     ) ~}}
-                    prefix + "{{lower-snake p.property_name}}" -> {{lower-camel p.property_name}} = {{converter}}
+                    prefix + "{{lower-snake p.property_name}}" -> {{lower-camel p.property_name}} = {{nullable}}{{converter}}
                     {{/each}}
                 }
             }
