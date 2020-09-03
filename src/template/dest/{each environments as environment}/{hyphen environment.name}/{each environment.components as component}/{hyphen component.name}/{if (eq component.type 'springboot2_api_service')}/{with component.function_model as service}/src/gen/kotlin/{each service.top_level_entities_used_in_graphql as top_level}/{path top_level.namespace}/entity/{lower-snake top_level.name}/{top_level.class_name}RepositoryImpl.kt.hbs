@@ -133,14 +133,19 @@ class {{repository_name}}Impl(
         """.trimMargin())
         .let { sql ->
             keys.foldIndexed(sql){ index, acc, key ->
-                acc
+                var binder = acc
                 {{#each entity.owner.primary_keys as |pk| ~}}
                 {{define 'col_name' (column-name (concat entity.owned_by.name ' ' pk.name)) ~}}
-                .bind("{{lower-camel col_name}}${index}", key.{{lower-camel col_name}})
+                {{define 'key_name' (lower-camel col_name) ~}}
+                {{define 'nullable' pk.nullable ~}}
+                binder ={{#if nullable}} if (key.{{key_name}} == null) binder else{{/if}} binder.bind("{{key_name}}${index}", key.{{key_name}}{{if nullable '!!'}})
                 {{/each}}
                 {{#each entity.primary_keys as |pk| ~}}
-                .bind("{{lower-camel pk.name}}${index}", key.{{lower-camel pk.name}})
+                {{define 'key_name' (lower-camel pk.name) ~}}
+                {{define 'nullable' pk.nullable ~}}
+                binder ={{#if nullable}} if (key.{{key_name}} == null) binder else{{/if}} binder.bind("{{key_name}}${index}", key.{{key_name}}{{if nullable '!!'}})
                 {{/each}}
+                binder
             }
         }
         .fetch()
@@ -154,7 +159,10 @@ class {{repository_name}}Impl(
     {{define "reference_entity_name" (upper-camel r.reference_entity.name) ~}}
     {{define "reference_entity_class_name" (concat reference_entity_name 'Entity') ~}}
     {{define "reference_entity_search_input_name" (concat reference_entity_name 'SearchInput') ~}}
-    {{define "result_type" (if r.multiple (concat 'List<' reference_entity_class_name '>') reference_entity_class_name) ~}}
+    {{define "result_type" (if r.multiple
+      (concat 'List<' reference_entity_class_name '>')
+      (concat reference_entity_class_name (if r.nullable '?' ''))
+    ) ~}}
     {{define "loader_method_name" (concat 'load' (upper-camel r.name) 'Of' (upper-camel entity.name)) ~}}
     {{define "derived_key_prefix" reference_entity.owned_by.name ~}}
     /**
@@ -202,7 +210,8 @@ class {{repository_name}}Impl(
         {{/if}}
         AND (
         ${inputs.entries.mapIndexed{ i, (input, keys) -> """
-          (${keys.mapIndexed{ index, _ -> """
+          {{define 'has_nullable_props' (any r.mappings '@it.property.nullable') ~}}
+          (${keys.mapIndexed{ index, {{if has_nullable_props 'key' '_'}} -> """
           {{#if r.aggregate ~}}
           {{#each entity.primary_keys as |pk| ~}}
           {{if @first '' 'AND'}}
@@ -210,8 +219,10 @@ class {{repository_name}}Impl(
           {{/each}}
           {{else}}
           {{#each r.mappings as |mapping| ~}}
+          {{define 'from_name' (lower-camel mapping.from) ~}}
+          {{define 'nullable' mapping.property.nullable ~}}
           {{if @first '' 'AND'}}
-            {{table-name reference_entity.name}}.{{column-name mapping.to}} = :{{lower-camel mapping.from}}_${i}_${index}
+            {{table-name reference_entity.name}}.{{column-name mapping.to}} = {{#if nullable}}${if (key.{{from_name}} == null) "null" else "{{/if}}:{{from_name}}_${i}_${index}{{if nullable '"}'}}
           {{/each}}
           {{/if}}
           -- """}.joinToString("\nOR\n")}
@@ -233,22 +244,27 @@ class {{repository_name}}Impl(
              _condition_.id = ${i}
         """}.joinToString("\nOR\n")}
          )
-        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), "").also{println(it)})
+        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), ""))
         .let {
             var sql = it
             inputs.entries.mapIndexed{ i, (input, keys) ->
                 sql = keys.foldIndexed(sql) { index, acc, key ->
-                    acc
+                    var binder = acc
                     {{#if r.aggregate ~}}
                     {{#each entity.primary_keys as |pk| ~}}
                     {{define 'prop_name' (concat (lower-camel derived_key_prefix) (upper-camel pk.name) '_${i}_${index}') ~}}
-                    .bind("{{prop_name}}", key.{{lower-camel pk.name}})
+                    {{define 'pk_name' (lower-camel pk.name) ~}}
+                    {{define 'nullable' pk.nullable ~}}
+                    binder ={{#if nullable}} if (key.{{pk_name}} == null) binder else{{/if}} binder.bind("{{prop_name}}", key.{{pk_name}}{{if nullable '!!'}})
                     {{/each}}
                     {{else}}
                     {{#each r.mappings as |mapping|}}
-                    .bind("{{lower-camel mapping.from}}_${i}_${index}", key.{{lower-camel mapping.from}})
+                    {{define 'from_name' (lower-camel mapping.from) ~}}
+                    {{define 'nullable' mapping.property.nullable ~}}
+                    binder ={{#if nullable}} if (key.{{from_name}} == null) binder else{{/if}} binder.bind("{{from_name}}_${i}_${index}", key.{{from_name}}{{if nullable '!!'}})
                     {{/each}}
                     {{/if}}
+                    binder
                 }
                 {{#each reference_entity.stored_properties as |p| ~}}
                 {{define "prop_name" (lower-camel p.name) ~}}
