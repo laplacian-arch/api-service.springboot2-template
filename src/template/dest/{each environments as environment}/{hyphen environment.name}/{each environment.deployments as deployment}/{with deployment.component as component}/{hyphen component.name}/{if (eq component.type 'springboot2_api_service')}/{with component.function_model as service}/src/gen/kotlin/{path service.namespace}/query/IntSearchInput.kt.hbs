@@ -4,12 +4,12 @@ import {{service.namespace}}.util.*
 
 data class IntSearchInput (
     val equalsTo: List<Int> = emptyList(),
-    val greaterThan: Int? = null,
-    val lessThan: Int? = null
+    val inRangeFrom: Int? = null,
+    val inRangeTo: Int? = null
 ) {
     fun isEmpty(): Boolean =
-        greaterThan == null &&
-        lessThan == null &&
+        inRangeFrom == null &&
+        inRangeTo == null &&
         equalsTo.isEmpty()
 
     companion object {
@@ -17,8 +17,8 @@ data class IntSearchInput (
             if (map == null || map !is Map<*, *>) IntSearchInput()
             else IntSearchInput(
                 equalsTo = map.getList<Int>("equalsTo"),
-                greaterThan = map.getAs<Int>("greaterThan"),
-                lessThan = map.getAs<Int>("lessThan")
+                inRangeFrom = map.getAs<Map<String,*>>("inRange")?.getAs<Int>("from"),
+                inRangeTo = map.getAs<Map<String,*>>("inRange")?.getAs<Int>("to")
             )
     }
 }

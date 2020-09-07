@@ -1,5 +1,9 @@
 input IntSearchInput {
   equalsTo: [Int]
-  greaterThan: Int
-  lessThan: Int
+  inRange: IntRange
+}
+
+input IntRange {
+  from: Int
+  to: Int
 }

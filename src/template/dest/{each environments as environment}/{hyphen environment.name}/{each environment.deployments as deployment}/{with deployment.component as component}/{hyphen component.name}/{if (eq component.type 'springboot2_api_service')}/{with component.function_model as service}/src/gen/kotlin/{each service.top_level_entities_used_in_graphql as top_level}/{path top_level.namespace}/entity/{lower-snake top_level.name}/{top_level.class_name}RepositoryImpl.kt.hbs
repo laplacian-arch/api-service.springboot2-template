@@ -97,7 +97,10 @@ class {{repository_name}}Impl(
           {{/if}}
           {{/each}}
         """}
-        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), "")
+        """
+        .trimMargin()
+        .replace("""(\n|^)\s*(--.*)?(\n|$)""", "")
+        .replace("""AND\s*$""".toRegex(), "")
 
     /**
      * Loads {{plural_name}} having the given keys.
@@ -244,7 +247,10 @@ class {{repository_name}}Impl(
              _condition_.id = ${i}
         """}.joinToString("\nOR\n")}
          )
-        """.trimMargin().replace("""AND(\s*--\s*)*$""".toRegex(), ""))
+        """
+        .trimMargin()
+        .replace("""(\n|^)\s*(--.*)?(\n|$)""", "")
+        .replace("""AND\s*$""".toRegex(), "")
         .let {
             var sql = it
             inputs.entries.mapIndexed{ i, (input, keys) ->

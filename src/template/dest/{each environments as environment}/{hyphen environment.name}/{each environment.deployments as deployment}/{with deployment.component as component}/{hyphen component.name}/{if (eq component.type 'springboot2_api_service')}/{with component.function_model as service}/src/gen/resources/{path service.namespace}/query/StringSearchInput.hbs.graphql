@@ -3,4 +3,10 @@ input StringSearchInput {
   startsWith: [String]
   endsWith: [String]
   contains: [String]
+  inRange: StringRange
+}
+
+input StringRange {
+  from: String
+  to: String
 }
