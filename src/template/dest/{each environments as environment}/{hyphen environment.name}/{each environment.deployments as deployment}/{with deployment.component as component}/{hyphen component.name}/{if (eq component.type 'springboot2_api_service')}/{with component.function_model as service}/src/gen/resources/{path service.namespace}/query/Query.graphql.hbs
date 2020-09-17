@@ -1,9 +1,8 @@
-{{define "top_level_entities" service.top_level_entities_used_in_graphql ~}}
 #
 # The root query schema definition.
 #
 type Query {
-  {{#each top_level_entities as |top_level| ~}}
+  {{#each service.entities_backing_graphql_type as |top_level| ~}}
   {{lower-camel (plural top_level.name)}}(
     {{#each top_level.stored_properties as |p|}}
     {{lower-camel p.name}}: {{p.class_name}}{{if (eq p.type 'boolean') '' 'SearchInput'}}
@@ -22,5 +21,16 @@ type Query {
     {{/each}}
   ): {{upper-camel top_level.name}}
   {{/if}}
+  {{/each}}
+  {{#each service.graphql_types_backed_by_external_rest_api as |type| ~}}
+  {{define "operation" type.rest_operation ~}}
+  {{lower-camel type.name}}(
+    {{#each operation.path_parameters as |param| ~}}
+    {{lower-camel param.name}}: {{upper-camel param.type}}!
+    {{/each}}
+    {{#each operation.query_parameters as |param| ~}}
+    {{lower-camel param.name}}: {{upper-camel param.type}}
+    {{/each}}
+  ): {{upper-camel type.rest_resource.resource_model.name}}
   {{/each}}
 }

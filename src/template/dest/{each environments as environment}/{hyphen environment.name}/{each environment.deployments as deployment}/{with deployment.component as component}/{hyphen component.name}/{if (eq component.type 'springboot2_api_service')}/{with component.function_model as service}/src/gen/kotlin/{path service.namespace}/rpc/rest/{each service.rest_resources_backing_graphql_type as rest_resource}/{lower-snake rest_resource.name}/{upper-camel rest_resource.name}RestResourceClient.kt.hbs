@@ -1,0 +1,48 @@
+{{define "package" (concat service.namespace '.rpc.rest.' (lower-snake rest_resource.name)) ~}}
+package {{package}}
+
+import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.http.HttpMethod
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
+
+@Component
+class {{upper-camel rest_resource.name}}RestResourceClient: {{upper-camel rest_resource.name}}RestResource {
+    {{#each rest_resource.operations as |operation| ~}}
+    override fun {{lower-camel operation.name}}(
+        request: {{upper-camel operation.name}}Request
+    ): CompletableFuture<{{upper-camel operation.name}}Response> =
+        client
+        .method(HttpMethod.{{upper-snake operation.method}})
+        .uri {
+            it
+            .path("{{operation.path}}")
+            .queryParam("key", apiKey)
+            .build(mapOf(
+                {{#each operation.path_parameters as |param| ~}}
+                "{{lower-camel param.name}}" to request.{{lower-camel param.name}},
+                {{/each}}
+                {{#each operation.query_parameters as |param| ~}}
+                "{{lower-camel param.name}}" to request.{{lower-camel param.name}},
+                {{/each}}
+            ))
+        }
+        .retrieve()
+        .bodyToMono({{upper-camel operation.name}}Response::class.java)
+        .toFuture()
+    {{/each}}
+
+    @Value("{{package}}.base_url")
+    private val baseUrl: String
+
+    @Value("{{package}}.api_key")
+    private val apiKey: String
+
+    private val client = WebClient.builder()
+        .baseUrl(baseUrl)
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .build()
+}

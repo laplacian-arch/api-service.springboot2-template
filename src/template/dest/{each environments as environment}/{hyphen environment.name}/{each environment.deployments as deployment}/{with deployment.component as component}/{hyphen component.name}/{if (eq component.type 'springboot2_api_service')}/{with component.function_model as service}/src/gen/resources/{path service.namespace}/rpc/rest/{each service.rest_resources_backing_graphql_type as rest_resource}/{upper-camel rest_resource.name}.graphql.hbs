@@ -1,0 +1,6 @@
+{{define 'entity' rest_resource.resource_model ~}}
+type {{upper-camel rest_resource.name}} {
+    {{#each entity.stored_properties as |property| ~}}
+    {{lower-camel property.name}}: {{property.class_name}}{{if (not nullable) '!'}}
+    {{/each}}
+}
