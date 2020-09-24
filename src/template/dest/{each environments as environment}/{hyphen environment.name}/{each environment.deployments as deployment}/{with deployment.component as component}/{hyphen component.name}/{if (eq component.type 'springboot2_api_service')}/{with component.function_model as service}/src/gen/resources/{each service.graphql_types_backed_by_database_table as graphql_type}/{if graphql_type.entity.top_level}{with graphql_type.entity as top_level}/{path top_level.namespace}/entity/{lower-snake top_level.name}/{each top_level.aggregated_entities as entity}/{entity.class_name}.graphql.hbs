@@ -1,0 +1,30 @@
+#
+# {{trim entity.description}}
+#
+type {{entity.class_name}} {
+  {{#each entity.stored_properties as |p| ~}}
+  {{define 'prop_type' (case
+    (eq p.type "number") 'Int'
+    (upper-camel p.type)
+  ) ~}}
+  #
+  # {{trim p.description}}
+  #
+  {{lower-camel p.identifier}}: {{prop_type}}{{if (not p.nullable) '!'}}
+  {{/each}}
+
+  {{#each entity.stored_relationships as |r| ~}}
+  {{define 'reference_type'
+    (printf (if r.multiple '[%s!]' '%s') r.reference_entity.class_name)
+  ~}}
+  #
+  # {{trim r.description}}
+  #
+  {{lower-camel r.identifier}}(
+    {{#each r.reference_entity.stored_properties as |property| ~}}
+    {{lower-camel property.name}}: {{property.class_name}}{{if (eq property.type 'boolean') '' 'SearchInput'}}
+    {{/each}}
+  ): {{reference_type}}{{if (not r.nullable) '!'}}
+
+  {{/each}}
+}

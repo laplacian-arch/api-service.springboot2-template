@@ -13,7 +13,7 @@ import graphql.schema.idl.SchemaGenerator
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 import {{service.namespace}}.query.QueryResolver
-{{#each service.top_level_entities_used_in_graphql as |top_level| ~}}
+{{#each service.top_level_entities_backing_graphql_type as |top_level| ~}}
 {{define "entity_package" (concat
     top_level.namespace '.entity.' (lower-underscore top_level.identifier
 )) ~}}
@@ -53,25 +53,25 @@ class GraphqlConfig {
 
     @Bean
     fun buildRuntimeWiring(
-        {{#each service.entities_used_in_graphql as |entity| ~}}
+        queryResolver: QueryResolver,
+        {{#each service.entities_backing_graphql_type as |entity| ~}}
         {{lower-camel entity.name}}Resolver: {{upper-camel entity.name}}Resolver,
         {{/each}}
-        queryResolver: QueryResolver
     ): RuntimeWiring = RuntimeWiring.newRuntimeWiring().also {
-        {{#each service.entities_used_in_graphql as |entity| ~}}
+        queryResolver.registerFetcher(it)
+        {{#each service.entities_backing_graphql_type as |entity| ~}}
         {{lower-camel entity.name}}Resolver.registerFetcher(it)
         {{/each}}
-        queryResolver.registerFetcher(it)
     }.build()
 
     @Bean
     fun buildDataLoaderRegistry(
-        {{#each service.entities_used_in_graphql as |entity| ~}}
-        {{lower-camel entity.name}}Resolver: {{upper-camel entity.name}}Resolver{{#unless @last}},{{/unless}}
+        {{#each service.graphql_types_backed_by_database_table as |type| ~}}
+        {{lower-camel type.entity.name}}Resolver: {{upper-camel type.entity.name}}Resolver,
         {{/each}}
     ): DataLoaderRegistry = DataLoaderRegistry().also {
-        {{#each service.entities_used_in_graphql as |entity| ~}}
-        {{lower-camel entity.name}}Resolver.registerLoader(it)
+        {{#each service.graphql_types_backed_by_database_table as |type| ~}}
+        {{lower-camel type.entity.name}}Resolver.registerLoader(it)
         {{/each}}
     }
 }

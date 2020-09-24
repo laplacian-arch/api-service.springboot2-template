@@ -1,10 +1,7 @@
 {{define "package" (concat service.namespace '.query') ~}}
 package {{package}}
-{{#each service.entities_backing_graphql_type as |entity| ~}}
-{{define "base_package" (concat entity.namespace '.entity.' (lower-snake entity.name)) ~}}
-import {{base_package}}.{{entity.class_name}}Entity
-import {{base_package}}.{{entity.class_name}}Repository
-import {{base_package}}.{{entity.class_name}}SearchInput
+{{#each service.top_level_entities_backing_graphql_type as |entity| ~}}
+import {{entity.namespace}}.entity.{{lower-snake entity.name}}.*
 {{/each}}
 {{#each service.rest_resources_backing_graphql_type as |rest_resource| ~}}
 import {{concat service.namespace '.rpc.rest.' (lower-snake rest_resource.name) '.*' }}
@@ -16,17 +13,26 @@ import graphql.schema.idl.TypeRuntimeWiring
 import graphql.schema.DataFetchingEnvironment
 import java.util.concurrent.CompletableFuture
 
+{{define 'graphql_types_backed_by_database_table'
+  (filter service.graphql_types_backed_by_database_table '@it.entity.top_level')
+~}}
 @Component
 class QueryResolver(
-    {{#each service.entities_backing_graphql_type as |entity|~}}
-    val {{lower-camel entity.name}}Repository: {{upper-camel entity.name}}Repository,
+    {{#each graphql_types_backed_by_database_table as |type| ~}}
+    {{define "repository_name" (concat type.entity.name ' repository') ~}}
+    val {{lower-camel repository_name}}: {{upper-camel repository_name}},
     {{/each}}
     {{#each service.graphql_types_backed_by_external_rest_api as |type| ~}}
     {{define "rest_resource_name" (concat type.rest_resource.name '_rest_resource') ~}}
     val {{lower-camel rest_resource_name}}: {{upper-camel rest_resource_name}},
     {{/each}}
+    {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
+    {{define 'searcher_name' (concat type.document_model.name ' searcher') ~}}
+    val {{lower-camel searcher_name}}: {{upper-camel searcher_name}},
+    {{/each}}
 ) {
-    {{#each service.entities_backing_graphql_type as |top_level| ~}}
+    {{#each graphql_types_backed_by_database_table as |type|~}}
+    {{define 'top_level' type.entity ~}}
 
     {{define "entity_class_name" (concat (upper-camel top_level.name) 'Entity') ~}}
     fun {{lower-camel top_level.name}}(context: DataFetchingEnvironment): CompletableFuture<{{entity_class_name}}> =
@@ -60,9 +66,17 @@ class QueryResolver(
         ))
     {{/each}}
 
+    {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
+    fun {{lower-camel (plural type.name)}}(context: DataFetchingEnvironment): CompletableFuture<List<{{upper-camel type.name}}Document>> =
+        {{lower-camel type.name}}Searcher
+        .find{{upper-camel (plural type.name)}}({{upper-camel type.name}}SearchInput.from(context.arguments))
+        .thenApply{ it.toList() }
+    {{/each}}
+
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
         TypeRuntimeWiring.newTypeWiring("Query")
-        {{#each service.entities_backing_graphql_type as |top_level| ~}}
+        {{#each graphql_types_backed_by_database_table as |type| ~}}
+        {{define 'top_level' type.entity ~}}
         {{define 'plural_name' (lower-camel (plural top_level.name)) ~}}
         {{define 'singular_name' (lower-camel top_level.name) ~}}
         .dataFetcher("{{plural_name}}") { env -> {{plural_name}}(env) }
@@ -72,11 +86,15 @@ class QueryResolver(
         {{#each service.graphql_types_backed_by_external_rest_api as |type| ~}}
         .dataFetcher("{{lower-camel type.name}}") { env -> {{lower-camel type.rest_operation.name}}(env)}
         {{/each}}
+        {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
+        {{define 'plural_name' (lower-camel (plural type.document_model.name)) ~}}
+        .dataFetcher("{{plural_name}}") { env -> indexedComments(env)}
+        {{/each}}
     )
 
     companion object {
-        {{#each service.entities_backing_graphql_type as |top_level| ~}}
-        const val {{concat (upper-snake top_level.name) '_BY_PK'}} = "{{lower-camel top_level.name}}_byPK"
+        {{#each graphql_types_backed_by_database_table as |type| ~}}
+        const val {{concat (upper-snake type.entity.name) '_BY_PK'}} = "{{lower-camel type.entity.name}}_byPK"
         {{/each}}
     }
 }

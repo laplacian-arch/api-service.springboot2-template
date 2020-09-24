@@ -21,10 +21,14 @@ java \
   {{env_prefix}}_USER:+ --{{prop_prefix}}.username=}{{env_prefix}}_USER} \
   {{env_prefix}}_PASS:+ --{{prop_prefix}}.password=}{{env_prefix}}_PASS} \
   {{/each}}
-  {{#each service.http_clients as |http_client| ~}}
-  {{define "env_prefix" (concat '${HTTP_CLIENT_' (upper-snake http_client.name)) ~}}
-  {{define "prop_prefix" (concat 'http_client.' (lower-snake http_client.name)) ~}}
+  {{#each service.rest_clients as |client| ~}}
+  {{define "env_prefix" (concat '${REST_CLIENT_' (upper-snake client.name)) ~}}
+  {{define "prop_prefix" (concat 'rest_client.' (lower-snake client.name)) ~}}
   {{env_prefix}}_BASE_URL:+ --{{prop_prefix}}.base_url=}{{env_prefix}}_BASE_URL} \
   {{env_prefix}}_API_KEY:+ --{{prop_prefix}}.api_key=}{{env_prefix}}_API_KEY} \
   {{/each}}
-
+  {{#each service.search_engine_clients as |client| ~}}
+  {{define "env_prefix" (concat '${SEARCH_ENGINE_CLIENT_' (upper-snake client.name)) ~}}
+  {{define "prop_prefix" (concat 'search_engine_client.' (lower-snake client.name)) ~}}
+  {{env_prefix}}_BASE_URL:+ --{{prop_prefix}}.endpoints=}{{env_prefix}}_ENDPOINTS} \
+  {{/each}}

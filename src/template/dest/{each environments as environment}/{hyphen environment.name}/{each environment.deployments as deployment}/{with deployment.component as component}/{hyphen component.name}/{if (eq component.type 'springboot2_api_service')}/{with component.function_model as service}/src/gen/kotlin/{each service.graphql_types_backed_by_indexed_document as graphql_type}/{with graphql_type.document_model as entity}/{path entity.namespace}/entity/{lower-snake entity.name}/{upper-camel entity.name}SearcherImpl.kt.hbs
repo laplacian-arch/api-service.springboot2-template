@@ -1,0 +1,53 @@
+package {{entity.namespace}}.entity.{{lower-snake entity.name}}
+
+import org.springframework.stereotype.Component
+import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates
+import org.elasticsearch.index.query.QueryBuilders
+
+import java.util.concurrent.CompletableFuture
+import java.util.*
+
+@Component
+class {{upper-camel entity.name}}SearcherImpl(
+    private val searcher: ReactiveElasticsearchOperations
+): {{upper-camel entity.name}}Searcher {
+
+    companion object {
+        const val INDEX_NAME = "{{lower-snake graphql_type.index_name}}"
+    }
+
+    override fun find{{upper-camel (plural entity.name)}}(
+        input: {{upper-camel entity.name}}SearchInput
+    ): CompletableFuture<List<{{upper-camel entity.name}}Document>> {
+        val query = NativeSearchQueryBuilder()
+        {{#each entity.stored_properties as |property| ~}}
+        {{define 'prop_name' (lower-camel property.name) ~}}
+        {{#if (eq property.type 'string') ~}}
+        if (!input.{{prop_name}}.isEmpty()) {
+            query.withQuery(QueryBuilders.matchQuery("{{prop_name}}", input.{{prop_name}}))
+        }
+        {{/if}}
+        {{#if (eq property.type 'number') ~}}
+        if (!input.{{prop_name}}.equalsTo.isEmpty()) {
+            query.withQuery(QueryBuilders.termsQuery("{{prop_name}}", input.{{prop_name}}.equalsTo))
+        }
+        if (input.{{prop_name}}.inRangeFrom != null) {
+            query.withQuery(QueryBuilders.rangeQuery("{{prop_name}}").from(input.{{prop_name}}.inRangeFrom))
+        }
+        if (input.{{prop_name}}.inRangeTo != null) {
+            query.withQuery(QueryBuilders.rangeQuery("{{prop_name}}").to(input.{{prop_name}}.inRangeTo))
+        }
+        {{/if}}
+        {{/each}}
+       return searcher.search(
+            query.build(),
+            {{upper-camel entity.name}}Document::class.java,
+            IndexCoordinates.of(INDEX_NAME),
+        )
+        .map{ it.content }
+        .collectList()
+        .toFuture()
+    }
+}

@@ -1,0 +1,41 @@
+package {{entity.namespace}}.entity.{{lower-snake entity.name}}
+
+import {{service.namespace}}.query.*
+import {{service.namespace}}.util.*
+
+{{define 'class_name' (concat (upper-camel entity.name) 'SearchInput') ~}}
+data class {{class_name}} (
+    {{#each entity.stored_properties as |property| ~}}
+    {{define 'type_and_initializer' (case
+      (eq property.type 'number') 'IntSearchInput = IntSearchInput()'
+      (eq property.type 'string') 'String = ""'
+      (eq property.type 'boolean') 'BooleanSearchInput = BooleanSearchInput()'
+    ) ~}}
+    val {{lower-camel property.name}}: {{type_and_initializer}},
+    {{/each}}
+) {
+    fun isEmpty(): Boolean =
+        {{#each entity.stored_properties as |property| ~}}
+        {{lower-camel property.name}}.isEmpty(){{if (not @last) ' &&'}}
+        {{/each}}
+
+    companion object {
+        fun from(args: Map<String, Any?>): {{class_name}} {
+            return {{class_name}}(
+                {{#each entity.stored_properties as |property| ~}}
+                {{define 'prop_name' (lower-camel property.name) ~}}
+                {{define 'prop_type' (lower-camel property.type) ~}}
+                {{#if (eq prop_type 'string') ~}}
+                {{prop_name}} = args["{{prop_name}}"] as? String ?: "",
+                {{/if}}
+                {{#if (eq prop_type 'number') ~}}
+                {{prop_name}} = IntSearchInput.from(args["{{prop_name}}"]),
+                {{/if}}
+                {{#if (eq prop_type 'boolean') ~}}
+                {{prop_name}} = BooleanSearchInput.from(args["{{prop_name}}"]),
+                {{/if}}
+                {{/each}}
+            )
+        }
+    }
+}

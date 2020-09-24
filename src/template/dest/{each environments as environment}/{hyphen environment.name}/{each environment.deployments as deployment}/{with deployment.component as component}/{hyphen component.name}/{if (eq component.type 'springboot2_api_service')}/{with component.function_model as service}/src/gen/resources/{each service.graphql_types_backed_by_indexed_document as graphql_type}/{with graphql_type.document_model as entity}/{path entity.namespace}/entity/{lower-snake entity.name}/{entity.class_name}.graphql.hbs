@@ -1,0 +1,22 @@
+#
+# {{trim entity.description}}
+#
+type {{entity.class_name}} {
+  {{#each entity.stored_properties as |p| ~}}
+  {{define 'prop_type' (case
+    (eq p.type "number") 'Int'
+    (upper-camel p.type)
+  ) ~}}
+  #
+  # {{trim p.description}}
+  #
+  {{lower-camel p.identifier}}: {{prop_type}}{{if (not p.nullable) '!'}}
+  {{/each}}
+
+  {{#each graphql_type.relationships as |relationship| ~}}
+  {{define 'referencing_type' relationship.referencing_type ~}}
+  {{#if (eq referencing_type.resolver_type 'entity_on_database') ~}}
+  {{lower-camel relationship.name}}: {{upper-camel referencing_type.entity.name}}
+  {{/if}}
+  {{/each}}
+}

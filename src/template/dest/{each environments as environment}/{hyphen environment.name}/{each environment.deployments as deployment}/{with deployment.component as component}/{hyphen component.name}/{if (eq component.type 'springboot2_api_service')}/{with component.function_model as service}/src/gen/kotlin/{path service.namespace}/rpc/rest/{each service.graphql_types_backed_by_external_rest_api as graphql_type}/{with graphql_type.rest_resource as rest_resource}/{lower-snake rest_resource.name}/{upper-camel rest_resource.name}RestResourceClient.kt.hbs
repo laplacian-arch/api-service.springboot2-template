@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
 {{define 'config_prefix' (concat
-  'http_client.' (lower-snake rest_resource.http_client_name)
+  'rest_client.' (lower-snake graphql_type.rest_client_name)
 ) ~}}
 @Component
 class {{upper-camel rest_resource.name}}RestResourceClient(

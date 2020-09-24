@@ -1,0 +1,64 @@
+package {{entity.namespace}}.entity.{{lower-snake entity.name}}
+
+import org.dataloader.DataLoader
+import org.dataloader.DataLoaderRegistry
+import org.springframework.stereotype.Component
+import graphql.schema.idl.RuntimeWiring
+import graphql.schema.idl.TypeRuntimeWiring
+import graphql.schema.DataFetchingEnvironment
+import java.util.concurrent.CompletableFuture
+{{define 'relating_graphql_types'
+  (map graphql_type.relationships '@it.referencing_type')
+~}}
+{{define 'relating_graphql_types_backed_by_database_table'
+  (filter relating_graphql_types '(eq @it.resolver_type "entity_on_database")')
+~}}
+{{#each relating_graphql_types_backed_by_database_table as |type| ~}}
+{{define 'reference_entity' type.entity ~}}
+import {{reference_entity.namespace}}.entity.{{lower-snake reference_entity.name}}.*
+{{/each}}
+
+/**
+ * A reactive implementation of the {{entity.name}} entity query resolver.
+ */
+@Component
+class {{upper-camel entity.name}}Resolver(
+    {{#each relating_graphql_types_backed_by_database_table as |type| ~}}
+    {{define 'repo_name' (concat type.entity.name ' repository') ~}}
+    private val {{lower-camel repo_name}}: {{upper-camel repo_name}},
+    {{/each}}
+) {
+    {{#each graphql_type.relationships as |relationship| ~}}
+    {{#if (eq relationship.referencing_type.resolver_type 'entity_on_database') ~}}
+    {{define 'reference_entity' relationship.referencing_type.entity ~}}
+    {{define 'entity_class_name' (upper-camel (concat reference_entity.name '_entity')) ~}}
+    fun {{lower-camel relationship.name}}(
+        self: {{upper-camel entity.name}}Document,
+        context: DataFetchingEnvironment
+    ): CompletableFuture<{{entity_class_name}}> =
+        context
+        .getDataLoader<{{entity_class_name}}, {{entity_class_name}}>(BY_PK)
+        .load({{entity_class_name}}().apply {
+            {{#each relationship.mappings as |mapping|}}
+            {{lower-camel mapping.to}} = self.{{lower-camel mapping.from}}
+            {{/each}}
+        })
+    {{/if}}
+    {{/each}}
+
+    fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
+        TypeRuntimeWiring.newTypeWiring("{{upper-camel entity.name}}")
+        {{#each graphql_type.relationships as |relationship| ~}}
+        {{#if (eq relationship.referencing_type.resolver_type 'entity_on_database') ~}}
+        .dataFetcher("{{lower-camel relationship.name}}") { env ->
+            val key = env.getSource() as {{upper-camel entity.name}}Document
+            {{lower-camel relationship.name}}(key, env)
+        }
+        {{/if}}
+        {{/each}}
+    )
+
+    companion object {
+        const val BY_PK = "comment_byPK"
+    }
+}
