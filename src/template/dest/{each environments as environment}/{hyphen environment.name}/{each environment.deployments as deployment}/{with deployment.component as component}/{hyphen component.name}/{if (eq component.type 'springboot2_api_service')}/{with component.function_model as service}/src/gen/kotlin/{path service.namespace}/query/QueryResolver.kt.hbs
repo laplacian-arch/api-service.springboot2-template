@@ -88,7 +88,7 @@ class QueryResolver(
         {{/each}}
         {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
         {{define 'plural_name' (lower-camel (plural type.document_model.name)) ~}}
-        .dataFetcher("{{plural_name}}") { env -> indexedComments(env)}
+        .dataFetcher("{{plural_name}}") { env -> {{plural_name}}(env)}
         {{/each}}
     )
 
