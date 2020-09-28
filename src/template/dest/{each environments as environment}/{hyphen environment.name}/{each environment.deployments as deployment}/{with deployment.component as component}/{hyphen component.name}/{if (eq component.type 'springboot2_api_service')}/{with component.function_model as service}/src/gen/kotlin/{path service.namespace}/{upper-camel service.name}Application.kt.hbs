@@ -8,7 +8,7 @@ import org.springframework.context.annotation.ComponentScan
 /**
  * The launcher class for the {{service.name}} service.
  */
-@SpringBootApplication
+@SpringBootApplication()
 @ComponentScan(basePackages = [
     {{define 'namespaces' (unique
         (map service.top_level_entities_used_in_graphql '@it.namespace')

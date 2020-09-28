@@ -20,7 +20,7 @@ dependencies {
   {{#if service.graphql_types_backed_by_database_table ~}}
   implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
   {{/if}}
-  {{#if service.graphql_types_backed_by_indexed_document ~}}
+  {{#if service.depends_on_elasticsearch ~}}
   implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
   {{/if}}
   implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
