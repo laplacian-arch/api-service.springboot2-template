@@ -26,6 +26,7 @@ import {{entity_package}}.{{aggregate.reference_entity.class_name}}Resolver
 {{/each}}
 import java.nio.charset.StandardCharsets
 import graphql.schema.idl.RuntimeWiring
+import graphql.scalars.ExtendedScalars
 
 @Configuration
 class GraphqlConfig {
@@ -57,7 +58,10 @@ class GraphqlConfig {
         {{#each service.entities_backing_graphql_type as |entity| ~}}
         {{lower-camel entity.name}}Resolver: {{upper-camel entity.name}}Resolver,
         {{/each}}
-    ): RuntimeWiring = RuntimeWiring.newRuntimeWiring().also {
+    ): RuntimeWiring = RuntimeWiring.newRuntimeWiring()
+    .scalar(ExtendedScalars.DateTime)
+    .scalar(ExtendedScalars.Date)
+    .also {
         queryResolver.registerFetcher(it)
         {{#each service.entities_backing_graphql_type as |entity| ~}}
         {{lower-camel entity.name}}Resolver.registerFetcher(it)

@@ -68,9 +68,15 @@ class QueryResolver(
 
     {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
     fun {{lower-camel (plural type.name)}}(context: DataFetchingEnvironment): CompletableFuture<List<{{upper-camel type.name}}Document>> =
-        {{lower-camel type.name}}Searcher
+        {{lower-camel type.index_name}}Searcher
         .find{{upper-camel (plural type.name)}}({{upper-camel type.name}}SearchInput.from(context.arguments))
         .thenApply{ it.toList() }
+    {{/each}}
+
+    {{#each service.graphql_types_backed_by_elasticsearch_query as |type| ~}}
+    fun {{lower-camel type.name}}(context: DataFetchingEnvironment): CompletableFuture<List<{{upper-camel type.query.name}}Data>> =
+        {{lower-camel type.query.index_name}}Searcher
+        .{{lower-camel type.query.name}}({{upper-camel type.query.name}}Input.from(context.arguments))
     {{/each}}
 
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
@@ -89,6 +95,9 @@ class QueryResolver(
         {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
         {{define 'plural_name' (lower-camel (plural type.document_model.name)) ~}}
         .dataFetcher("{{plural_name}}") { env -> {{plural_name}}(env)}
+        {{/each}}
+        {{#each service.graphql_types_backed_by_elasticsearch_query as |type| ~}}
+        .dataFetcher("{{lower-camel type.name}}") { env -> {{lower-camel type.name}}(env)}
         {{/each}}
     )
 

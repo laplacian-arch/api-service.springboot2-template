@@ -25,6 +25,7 @@ dependencies {
   {{/if}}
   implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
   implementation "com.graphql-java:graphql-java-spring-boot-starter-webflux:$graphqlJavaWebfluxVersion"
+  implementation "com.graphql-java:graphql-java-extended-scalars:$graphqlExtendedScalarVersion"
   {{#if service.graphql_types_backed_by_database_table ~}}
   runtimeOnly "io.r2dbc:r2dbc-postgresql:$r2dbcPostgresVersion"
   {{/if}}
