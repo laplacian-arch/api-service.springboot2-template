@@ -46,7 +46,7 @@ bootRun {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     freeCompilerArgs = [ '-Xjsr305=strict' ]
-    jvmTarget = kotlinJvmTarget
+    jvmTarget = "$kotlinJvmTarget"
   }
 }
 

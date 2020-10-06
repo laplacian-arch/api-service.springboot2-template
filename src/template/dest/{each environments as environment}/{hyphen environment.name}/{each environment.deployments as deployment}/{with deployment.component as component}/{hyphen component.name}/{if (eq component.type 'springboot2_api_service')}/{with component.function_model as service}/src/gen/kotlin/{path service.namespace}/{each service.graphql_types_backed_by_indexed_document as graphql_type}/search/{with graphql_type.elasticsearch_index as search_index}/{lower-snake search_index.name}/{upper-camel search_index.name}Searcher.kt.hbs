@@ -1,0 +1,25 @@
+{{define "class_base_name" (upper-camel search_index.name) ~}}
+package {{service.namespace}}.search.{{lower-snake search_index.name}}
+
+import org.springframework.stereotype.Component
+import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations
+
+import java.util.concurrent.CompletableFuture
+
+/**
+ * A search interface against {{search_index.name}} index on the search engine.
+ */
+interface {{class_base_name}}Searcher {
+    /**
+     * Finds {{plural class_base_name}} which matches the given conditions.
+     */
+    fun find{{plural class_base_name}}(
+        input: {{class_base_name}}SearchInput = {{class_base_name}}SearchInput()
+    ): CompletableFuture<List<{{class_base_name}}Document>>
+    {{#each search_index.queries as |query| ~}}
+    {{define 'query_name' (upper-camel query.name) ~}}
+    fun {{lower-camel query_name}}(
+        input: {{query_name}}Input = {{query_name}}Input()
+    ): CompletableFuture<List<{{query_name}}Data>>
+    {{/each}}
+}

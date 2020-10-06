@@ -1,9 +1,10 @@
-#
-# The root query schema definition.
-#
 {{define 'graphql_types_backed_by_database_table'
   (filter service.graphql_types_backed_by_database_table '@it.entity.top_level')
 ~}}
+#
+# The root query schema definition.
+#
+scalar Date
 type Query {
   {{#each graphql_types_backed_by_database_table as |type| ~}}
   {{define 'top_level' type.entity}}
@@ -45,9 +46,18 @@ type Query {
       (eq prop.type 'string') 'String'
       (eq prop.type 'number') 'IntSearchInput'
       (eq prop.type 'boolean') 'BooleanSearchInput'
+      (upper-camel prop.type)
     ) ~}}
     {{lower-camel prop.name}}: {{param_type}}
     {{/each}}
   ): [{{upper-camel entity.name}}]!
+  {{#each service.graphql_types_backed_by_elasticsearch_query as |type| ~}}
+  {{define 'query' type.query ~}}
+  {{lower-camel query.name}}(
+  {{#each query.parameters as |parameter| }}
+    {{lower-camel parameter.name}}: {{upper-camel parameter.type}}
+  {{/each}}
+  ): [{{upper-camel query.name}}Data!]!
+  {{/each}}
   {{/each}}
 }

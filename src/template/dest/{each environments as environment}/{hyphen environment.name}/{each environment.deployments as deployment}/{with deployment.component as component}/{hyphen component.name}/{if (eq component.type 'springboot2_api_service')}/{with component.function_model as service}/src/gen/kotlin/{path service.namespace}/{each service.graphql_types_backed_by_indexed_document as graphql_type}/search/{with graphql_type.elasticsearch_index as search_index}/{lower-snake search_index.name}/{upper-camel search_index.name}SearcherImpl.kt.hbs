@@ -1,0 +1,126 @@
+{{define "class_base_name" (upper-camel search_index.name) ~}}
+{{define 'index_fields' search_index.document_model.stored_properties ~}}
+package {{service.namespace}}.search.{{lower-snake search_index.name}}
+
+import org.springframework.stereotype.Component
+import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates
+
+import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.aggregations.Aggregations
+import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import org.elasticsearch.search.aggregations.metrics.Sum
+import org.elasticsearch.search.aggregations.bucket.range.ParsedDateRange
+
+import java.util.concurrent.CompletableFuture
+
+@Component
+class {{class_base_name}}SearcherImpl(
+    private val searcher: ReactiveElasticsearchOperations
+): {{class_base_name}}Searcher {
+
+    companion object {
+        const val INDEX_NAME = "{{lower-snake search_index.name}}"
+    }
+
+    override fun find{{plural class_base_name}}(
+        input: {{class_base_name}}SearchInput
+    ): CompletableFuture<List<{{class_base_name}}Document>> {
+        val query = NativeSearchQueryBuilder()
+        {{#each index_fields as |property| ~}}
+        {{define 'prop_name' (lower-camel property.name) ~}}
+        {{#if (eq property.type 'string') ~}}
+        if (!input.{{prop_name}}.isEmpty()) {
+            query.withQuery(QueryBuilders.matchQuery("{{prop_name}}", input.{{prop_name}}))
+        }
+        {{/if}}
+        {{#if (eq property.type 'number') ~}}
+        if (!input.{{prop_name}}.equalsTo.isEmpty()) {
+            query.withQuery(QueryBuilders.termsQuery("{{prop_name}}", input.{{prop_name}}.equalsTo))
+        }
+        if (input.{{prop_name}}.inRangeFrom != null) {
+            query.withQuery(QueryBuilders.rangeQuery("{{prop_name}}").from(input.{{prop_name}}.inRangeFrom))
+        }
+        if (input.{{prop_name}}.inRangeTo != null) {
+            query.withQuery(QueryBuilders.rangeQuery("{{prop_name}}").to(input.{{prop_name}}.inRangeTo))
+        }
+        {{/if}}
+        {{/each}}
+        return searcher.search(
+            query.build(),
+            {{class_base_name}}Document::class.java,
+            IndexCoordinates.of(INDEX_NAME),
+        )
+        .map{ it.content }
+        .collectList()
+        .toFuture()
+    }
+    {{#each search_index.queries as |query| ~}}
+    {{define 'class_base_name' (upper-camel query.name) ~}}
+    override fun {{lower-camel class_base_name}}(
+        input: {{class_base_name}}Input
+    ): CompletableFuture<List<{{class_base_name}}Data>> {
+        val query = NativeSearchQueryBuilder()
+        {{#if query.aggregates ~}}
+        query.addAggregation(
+            {{#each query.aggregates as |aggregate| ~}}
+            AggregationBuilders
+            .{{lower-camel aggregate.aggregation_type}}("{{aggregate.name}}")
+            {{#each aggregate.fields as |field| ~}}
+            .field("{{lower-camel field.name}}")
+            {{/each}}
+            {{#if (eq aggregate.aggregation_type 'date_range')}}
+            .addRange(
+                input.{{lower-camel aggregate.date_from}}.toString(),
+                input.{{lower-camel aggregate.date_to}}.toString(),
+            )
+            {{/if}}
+            {{#*inline "SUB_AGGREGATION"}}
+            .subAggregation(
+                AggregationBuilders
+                .{{lower-camel AGGREGATE.aggregation_type}}("{{AGGREGATE.name}}")
+                {{#each AGGREGATE.fields as |field| ~}}
+                .field("{{lower-camel field.name}}")
+                {{/each}}
+                {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+                {{#shift width=4}}
+                {{> SUB_AGGREGATION AGGREGATE=sub_aggregate}}
+                {{/shift}}
+                {{/each}}
+            )
+            {{/inline}}
+            {{#each aggregate.sub_aggregates as |sub_aggregate|}}
+            {{> SUB_AGGREGATION AGGREGATE=sub_aggregate }}
+            {{/each}}
+            {{/each}}
+        )
+        val result = searcher.aggregate(query.build(),
+            {{class_base_name}}Data::class.java,
+            IndexCoordinates.of(INDEX_NAME),
+        )
+        val countByWord = { aggregations: Aggregations ->
+            val sum = aggregations.get("count") as Sum
+            sum.value.toInt()
+        }
+        val wordsInDateRange = { aggregations: Aggregations ->
+            val terms = aggregations.get("word") as Terms
+            terms.buckets.map { it.keyAsString to it.aggregations }
+        }
+
+        return result.filter{it.name == "date_range@date"}.next().map{
+            val perDateRangeAggregations = (it as ParsedDateRange).buckets.first().aggregations
+            wordsInDateRange(perDateRangeAggregations).map {
+                val word = it.first
+                val perWordAggregations = it.second
+                TrendingWordsRankingData(
+                    word = word,
+                    count = countByWord(perWordAggregations),
+                )
+            }
+        }.toFuture()
+        {{/if}}
+    }
+    {{/each}}
+}

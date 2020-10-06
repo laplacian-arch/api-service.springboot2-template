@@ -24,6 +24,10 @@ import {{entity_package}}.{{aggregate.reference_entity.class_name}}Resolver
 {{/each}}
 {{/if}}
 {{/each}}
+{{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
+{{define "index_name" graphql_type.elasticsearch_index.name ~}}
+import {{service.namespace}}.search.{{lower-snake index_name}}.{{upper-camel index_name}}Resolver
+{{/each}}
 import java.nio.charset.StandardCharsets
 import graphql.schema.idl.RuntimeWiring
 import graphql.scalars.ExtendedScalars
@@ -58,6 +62,10 @@ class GraphqlConfig {
         {{#each service.entities_backing_graphql_type as |entity| ~}}
         {{lower-camel entity.name}}Resolver: {{upper-camel entity.name}}Resolver,
         {{/each}}
+        {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
+        {{define "index_name" graphql_type.elasticsearch_index.name ~}}
+        {{lower-camel index_name}}Resolver: {{upper-camel index_name}}Resolver,
+        {{/each}}
     ): RuntimeWiring = RuntimeWiring.newRuntimeWiring()
     .scalar(ExtendedScalars.DateTime)
     .scalar(ExtendedScalars.Date)
@@ -65,6 +73,10 @@ class GraphqlConfig {
         queryResolver.registerFetcher(it)
         {{#each service.entities_backing_graphql_type as |entity| ~}}
         {{lower-camel entity.name}}Resolver.registerFetcher(it)
+        {{/each}}
+        {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
+        {{define "index_name" graphql_type.elasticsearch_index.name ~}}
+        {{lower-camel index_name}}Resolver.registerFetcher(it)
         {{/each}}
     }.build()
 

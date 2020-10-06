@@ -1,4 +1,11 @@
-package {{entity.namespace}}.entity.{{lower-snake entity.name}}
+{{define "class_base_name" (upper-camel search_index.name) ~}}
+{{define 'relating_graphql_types'
+  (map graphql_type.relationships '@it.referencing_type')
+~}}
+{{define 'relating_graphql_types_backed_by_database_table'
+  (filter relating_graphql_types '(eq @it.resolver_type "entity_on_database")')
+~}}
+package {{service.namespace}}.search.{{lower-snake search_index.name}}
 
 import org.dataloader.DataLoader
 import org.dataloader.DataLoaderRegistry
@@ -7,22 +14,16 @@ import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
 import graphql.schema.DataFetchingEnvironment
 import java.util.concurrent.CompletableFuture
-{{define 'relating_graphql_types'
-  (map graphql_type.relationships '@it.referencing_type')
-~}}
-{{define 'relating_graphql_types_backed_by_database_table'
-  (filter relating_graphql_types '(eq @it.resolver_type "entity_on_database")')
-~}}
 {{#each relating_graphql_types_backed_by_database_table as |type| ~}}
 {{define 'reference_entity' type.entity ~}}
 import {{reference_entity.namespace}}.entity.{{lower-snake reference_entity.name}}.*
 {{/each}}
 
 /**
- * A reactive implementation of the {{entity.name}} entity query resolver.
+ * A reactive implementation of the {{graphql_type.name}} graphql type resolver.
  */
 @Component
-class {{upper-camel entity.name}}Resolver(
+class {{class_base_name}}Resolver(
     {{#each relating_graphql_types_backed_by_database_table as |type| ~}}
     {{define 'repo_name' (concat type.entity.name ' repository') ~}}
     private val {{lower-camel repo_name}}: {{upper-camel repo_name}},
@@ -33,7 +34,7 @@ class {{upper-camel entity.name}}Resolver(
     {{define 'reference_entity' relationship.referencing_type.entity ~}}
     {{define 'entity_class_name' (upper-camel (concat reference_entity.name '_entity')) ~}}
     fun {{lower-camel relationship.name}}(
-        self: {{upper-camel entity.name}}Document,
+        self: {{class_base_name}}Document,
         context: DataFetchingEnvironment
     ): CompletableFuture<{{entity_class_name}}> =
         context
@@ -47,11 +48,11 @@ class {{upper-camel entity.name}}Resolver(
     {{/each}}
 
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
-        TypeRuntimeWiring.newTypeWiring("{{upper-camel entity.name}}")
+        TypeRuntimeWiring.newTypeWiring("{{class_base_name}}")
         {{#each graphql_type.relationships as |relationship| ~}}
         {{#if (eq relationship.referencing_type.resolver_type 'entity_on_database') ~}}
         .dataFetcher("{{lower-camel relationship.name}}") { env ->
-            val key = env.getSource() as {{upper-camel entity.name}}Document
+            val key = env.getSource() as {{class_base_name}}Document
             {{lower-camel relationship.name}}(key, env)
         }
         {{/if}}

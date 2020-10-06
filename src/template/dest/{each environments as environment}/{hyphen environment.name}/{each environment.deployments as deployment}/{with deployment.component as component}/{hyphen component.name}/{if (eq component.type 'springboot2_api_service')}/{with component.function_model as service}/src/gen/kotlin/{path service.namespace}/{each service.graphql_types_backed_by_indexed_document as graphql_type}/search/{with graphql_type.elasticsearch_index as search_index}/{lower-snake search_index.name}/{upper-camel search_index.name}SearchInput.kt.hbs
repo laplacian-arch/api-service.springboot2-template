@@ -1,28 +1,30 @@
-package {{entity.namespace}}.entity.{{lower-snake entity.name}}
+{{define "class_base_name" (upper-camel search_index.name) ~}}
+{{define 'class_name' (concat class_base_name 'SearchInput') ~}}
+{{define 'index_fields' search_index.document_model.stored_properties ~}}
+package {{service.namespace}}.search.{{lower-snake search_index.name}}
 
 import {{service.namespace}}.query.*
 import {{service.namespace}}.util.*
 
-{{define 'class_name' (concat (upper-camel entity.name) 'SearchInput') ~}}
 data class {{class_name}} (
-    {{#each entity.stored_properties as |property| ~}}
+    {{#each index_fields as |property| ~}}
     {{define 'type_and_initializer' (case
       (eq property.type 'number') 'IntSearchInput = IntSearchInput()'
-      (eq property.type 'string') 'String = ""'
       (eq property.type 'boolean') 'BooleanSearchInput = BooleanSearchInput()'
+      'String = ""'
     ) ~}}
     val {{lower-camel property.name}}: {{type_and_initializer}},
     {{/each}}
 ) {
     fun isEmpty(): Boolean =
-        {{#each entity.stored_properties as |property| ~}}
+        {{#each index_fields as |property| ~}}
         {{lower-camel property.name}}.isEmpty(){{if (not @last) ' &&'}}
         {{/each}}
 
     companion object {
         fun from(args: Map<String, Any?>): {{class_name}} {
             return {{class_name}}(
-                {{#each entity.stored_properties as |property| ~}}
+                {{#each index_fields as |property| ~}}
                 {{define 'prop_name' (lower-camel property.name) ~}}
                 {{define 'prop_type' (lower-camel property.type) ~}}
                 {{#if (eq prop_type 'string') ~}}
