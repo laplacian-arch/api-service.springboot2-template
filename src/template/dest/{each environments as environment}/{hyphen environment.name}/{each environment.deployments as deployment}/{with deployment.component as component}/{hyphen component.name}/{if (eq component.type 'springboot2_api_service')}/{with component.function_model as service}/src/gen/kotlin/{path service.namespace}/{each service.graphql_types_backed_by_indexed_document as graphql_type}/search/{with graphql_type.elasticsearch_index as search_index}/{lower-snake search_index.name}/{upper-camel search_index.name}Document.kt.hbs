@@ -1,6 +1,6 @@
 {{define "class_base_name" (upper-camel search_index.name) ~}}
 package {{service.namespace}}.search.{{lower-snake search_index.name}}
-import java.time.LocalDate
+import java.time.*
 
 data class {{class_base_name}}Document(
     {{#each search_index.document_model.stored_properties as |property| ~}}

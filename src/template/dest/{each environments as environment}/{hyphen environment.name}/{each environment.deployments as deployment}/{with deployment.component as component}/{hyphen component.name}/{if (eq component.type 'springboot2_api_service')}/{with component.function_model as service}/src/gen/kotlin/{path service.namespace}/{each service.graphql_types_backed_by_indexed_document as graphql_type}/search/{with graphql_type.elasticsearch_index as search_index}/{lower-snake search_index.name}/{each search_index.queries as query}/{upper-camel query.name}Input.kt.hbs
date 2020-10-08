@@ -3,7 +3,7 @@ package {{service.namespace}}.search.{{lower-snake search_index.name}}
 
 import {{service.namespace}}.query.*
 import {{service.namespace}}.util.*
-import java.time.LocalDate
+import java.time.*
 
 data class {{upper-camel class_base_name}}Input (
     {{#each query.parameters as |parameter| ~}}

@@ -5,6 +5,7 @@ package {{service.namespace}}.search.{{lower-snake search_index.name}}
 
 import {{service.namespace}}.query.*
 import {{service.namespace}}.util.*
+import java.time.*
 
 data class {{class_name}} (
     {{#each index_fields as |property| ~}}

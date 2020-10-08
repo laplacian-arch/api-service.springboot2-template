@@ -13,6 +13,8 @@ import org.elasticsearch.search.aggregations.Aggregations
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.aggregations.metrics.Sum
 import org.elasticsearch.search.aggregations.bucket.range.ParsedDateRange
+import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders
+import org.elasticsearch.script.Script
 
 import java.util.concurrent.CompletableFuture
 
@@ -62,44 +64,115 @@ class {{class_base_name}}SearcherImpl(
     override fun {{lower-camel class_base_name}}(
         input: {{class_base_name}}Input
     ): CompletableFuture<List<{{class_base_name}}Data>> {
+        {{#each query.parameters as |parameter| ~}}
+        {{define 'param_name' (lower-camel parameter.name) ~}}
+        val {{param_name}} = input.{{param_name}}
+        {{/each}}
         val query = NativeSearchQueryBuilder()
-        {{#if query.aggregates ~}}
-        query.addAggregation(
-            {{#each query.aggregates as |aggregate| ~}}
-            AggregationBuilders
-            .{{lower-camel aggregate.aggregation_type}}("{{aggregate.name}}")
-            {{#each aggregate.fields as |field| ~}}
-            .field("{{lower-camel field.name}}")
-            {{/each}}
-            {{#if (eq aggregate.aggregation_type 'date_range')}}
-            .addRange(
-                input.{{lower-camel aggregate.date_from}}.toString(),
-                input.{{lower-camel aggregate.date_to}}.toString(),
-            )
+        {{#if query.predicate ~}}
+        .withQuery(
+            {{#*inline 'QUERY_PREDICATE'}}
+            {{define 'predicate_type' PREDICATE.type ~}}
+            {{#if (eq predicate_type 'term')}}
+            QueryBuilders.termQuery("{{PREDICATE.field}}", {{dquote PREDICATE.value}})
             {{/if}}
-            {{#*inline "SUB_AGGREGATION"}}
-            .subAggregation(
-                AggregationBuilders
-                .{{lower-camel AGGREGATE.aggregation_type}}("{{AGGREGATE.name}}")
-                {{#each AGGREGATE.fields as |field| ~}}
-                .field("{{lower-camel field.name}}")
-                {{/each}}
-                {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+            {{#if (eq predicate_type 'bool')}}
+            QueryBuilders.boolQuery()
+            {{#each PREDICATE.must as |predicate| ~}}
+            .must(
                 {{#shift width=4}}
-                {{> SUB_AGGREGATION AGGREGATE=sub_aggregate}}
+                {{> QUERY_PREDICATE PREDICATE=predicate }}
                 {{/shift}}
-                {{/each}}
             )
+            {{/each}}
+            {{#each PREDICATE.must_not as |predicate| ~}}
+            .mustNot(
+                {{#shift width=4}}
+                {{> QUERY_PREDICATE PREDICATE=predicate }}
+                {{/shift}}
+            )
+            {{/each}}
+            {{#each PREDICATE.should as |predicate| ~}}
+            .should(
+                {{#shift width=4}}
+                {{> QUERY_PREDICATE PREDICATE=predicate }}
+                {{/shift}}
+            )
+            {{/each}}
+            {{#each PREDICATE.filter as |predicate| ~}}
+            .filter(
+                {{#shift width=4}}
+                {{> QUERY_PREDICATE PREDICATE=predicate }}
+                {{/shift}}
+            )
+            {{/each}}
+            {{/if}}
             {{/inline}}
-            {{#each aggregate.sub_aggregates as |sub_aggregate|}}
-            {{> SUB_AGGREGATION AGGREGATE=sub_aggregate }}
-            {{/each}}
-            {{/each}}
+            {{> QUERY_PREDICATE PREDICATE=query.predicate }}
         )
+        {{/if}}
+        {{#if query.aggregates ~}}
+        {{#each query.aggregates as |aggregate| ~}}
+        .addAggregation(
+            {{#*inline "AGGREGATION"}}
+            {{define 'aggregate_type' AGGREGATE.aggregation_type ~}}
+            {{define 'builder_factory_class' (case
+              (eq aggregate_type 'bucket_script') 'PipelineAggregatorBuilders'
+              'AggregationBuilders'
+            ) ~}}
+            {{builder_factory_class}}
+            {{#if (eq aggregate_type 'filter') ~}}
+            .filter(
+                "{{AGGREGATE.name}}",
+                {{#shift width=4 }}
+                {{> QUERY_PREDICATE PREDICATE=AGGREGATE.predicate }}
+                {{/shift}}
+            )
+            {{else if (eq aggregate_type 'bucket_script')}}
+            .bucketScript(
+                "{{AGGREGATE.name}}", mapOf(
+                    {{#each AGGREGATE.buckets_path as |bucket| ~}}
+                    "{{bucket.name}}" to "{{bucket.path}}",
+                    {{/each}}
+                ), Script({{dquote AGGREGATE.script}})
+            )
+            {{else}}
+            .{{lower-camel aggregate_type}}("{{AGGREGATE.name}}")
+            {{/if}}
+            {{#if AGGREGATE.field ~}}
+            .field("{{AGGREGATE.field}}")
+            {{/if}}
+            {{#each AGGREGATE.fields as |field| ~}}
+            .field("{{field.name}}")
+            {{/each}}
+            {{#if (eq aggregate_type 'date_range')}}
+            {{#each AGGREGATE.ranges as |range| ~}}
+            {{#if (and range.from range.to) ~}}
+            {{define 'key' (if range.key range.key (concat range.from '~' range.to)) ~}}
+            .addRange("{{key}}", {{dquote range.from}}, {{dquote range.to}})
+            {{else if range.from ~}}
+            .addUnboundedFrom({{key}}, {{dquote range.from}})
+            {{else if range.to ~}}
+            .addUnboundedTo({{key}}, {{dquote range.to}})
+            {{/if}}
+            {{/each}}
+            {{/if}}
+            {{#each AGGREGATE.sub_aggregates as |sub_aggregate|}}
+            .subAggregation(
+                {{#shift width=4}}
+                {{> AGGREGATION AGGREGATE=sub_aggregate }}
+                {{/shift}}
+            )
+            {{/each}}
+            {{/inline}}
+            {{> AGGREGATION AGGREGATE=aggregate }}
+        )
+        {{/each}}
         val result = searcher.aggregate(query.build(),
             {{class_base_name}}Data::class.java,
             IndexCoordinates.of(INDEX_NAME),
         )
+
         val countByWord = { aggregations: Aggregations ->
             val sum = aggregations.get("count") as Sum
             sum.value.toInt()

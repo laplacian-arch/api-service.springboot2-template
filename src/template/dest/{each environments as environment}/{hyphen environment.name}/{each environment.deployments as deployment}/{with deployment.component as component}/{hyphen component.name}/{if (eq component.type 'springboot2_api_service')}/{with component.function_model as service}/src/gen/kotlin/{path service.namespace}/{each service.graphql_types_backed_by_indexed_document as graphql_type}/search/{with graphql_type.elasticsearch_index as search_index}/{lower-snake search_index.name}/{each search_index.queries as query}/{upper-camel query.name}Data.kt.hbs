@@ -1,5 +1,6 @@
 {{define "class_base_name" (upper-camel query.name) ~}}
 package {{service.namespace}}.search.{{lower-snake search_index.name}}
+import java.time.*
 
 data class {{upper-camel class_base_name}}Data(
     val word: String = "",
