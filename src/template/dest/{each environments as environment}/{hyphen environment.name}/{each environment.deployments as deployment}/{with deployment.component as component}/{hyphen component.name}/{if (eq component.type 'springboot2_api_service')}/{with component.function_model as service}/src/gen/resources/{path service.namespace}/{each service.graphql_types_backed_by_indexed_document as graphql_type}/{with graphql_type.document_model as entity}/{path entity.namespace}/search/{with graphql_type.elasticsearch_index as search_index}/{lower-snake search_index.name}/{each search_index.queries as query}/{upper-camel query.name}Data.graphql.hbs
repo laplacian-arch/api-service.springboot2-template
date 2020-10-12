@@ -1,13 +1,63 @@
+{{#*inline 'AGGREGATE_PROPERTY_DEF' ~}}
+{{define 'AGGREGATE_TYPE' AGGREGATE.aggregation_type ~}}
+{{#if (eq AGGREGATE_TYPE 'date_range') ~}}
+    {{lower-camel AGGREGATE.name}}: {{PREFIX}}{{upper-camel AGGREGATE.name}}
+{{else if (or
+  (eq AGGREGATE_TYPE 'terms')
+  (eq AGGREGATE_TYPE 'date_histogram')
+) ~}}
+    {{lower-camel AGGREGATE.name}}: [{{PREFIX}}{{upper-camel AGGREGATE.name}}Entry]
+{{else if (eq AGGREGATE_TYPE 'filter') }}
+    {{lower-camel AGGREGATE.name}}: Int
+{{else}}
+    {{lower-camel AGGREGATE.name}}: Float
+{{/if}}
+{{/inline}}
+{{#*inline 'AGGREGATE_TYPE_DEF' ~}}
+{{define 'AGGREGATE_TYPE' AGGREGATE.aggregation_type ~}}
+{{define 'type_name' (upper-camel (concat PREFIX ' ' AGGREGATE.name)) ~}}
+{{define 'entry_type_name' (concat type_name 'Entry') ~}}
+{{#if (eq AGGREGATE_TYPE 'date_range') ~}}
+type {{type_name}} {
+    docCount: Int!
+    {{#each AGGREGATE.ranges as |range| ~}}
+    {{lower-camel range.key}}: {{entry_type_name}}
+    {{/each}}
+}
+type {{entry_type_name}} {
+    docCount: Int!
+    {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+    {{> AGGREGATE_PROPERTY_DEF PREFIX=entry_type_name AGGREGATE=sub_aggregate }}
+    {{/each}}
+}
+{{else if (or
+  (eq AGGREGATE_TYPE 'terms')
+  (eq AGGREGATE_TYPE 'date_histogram')
+)~}}
+type {{entry_type_name}} {
+    docCount: Int!
+    {{lower-camel AGGREGATE.field}}: String!
+    {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+    {{> AGGREGATE_PROPERTY_DEF PREFIX=entry_type_name AGGREGATE=sub_aggregate }}
+    {{/each}}
+}
+{{else}}
+{{/if}}
+{{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+{{> AGGREGATE_TYPE_DEF PREFIX=entry_type_name AGGREGATE=sub_aggregate}}
+{{/each}}
+{{/inline}}
+{{define 'query_data_class_name' (upper-camel (concat query.name ' Data')) ~}}
 #
 # {{query.name}}
 #
-type {{upper-camel query.name}}Data {
-  #
-  # The word of this trending_word.
-  #
-  word: String!
-  #
-  # The count of this trending_word.
-  #
-  count: Int!
+type {{query_data_class_name}} {
+    {{#each query.aggregates as |aggregate| ~}}
+    {{#shift width=4}}
+    {{> AGGREGATE_PROPERTY_DEF AGGREGATE=aggregate PREFIX=query_data_class_name}}
+    {{/shift}}
+    {{/each}}
 }
+{{#each query.aggregates as |aggregate| ~}}
+{{> AGGREGATE_TYPE_DEF AGGREGATE=aggregate PREFIX=query_data_class_name }}
+{{/each}}

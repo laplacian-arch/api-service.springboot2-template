@@ -1,5 +1,60 @@
 {{define "class_base_name" (upper-camel search_index.name) ~}}
+{{define "instance_base_name" (lower-camel search_index.name) ~}}
 {{define 'index_fields' search_index.document_model.stored_properties ~}}
+            {{~#*inline 'QUERY_PREDICATE'}}
+            {{define 'predicate_type' PREDICATE.type ~}}
+            {{#if (or
+                (eq predicate_type 'term')
+                (eq predicate_type 'range')
+            ) ~}}
+            {{#define 'predicate_body' ~}}
+            {{#if (eq predicate_type 'term') ~}}
+            QueryBuilders.termQuery("{{lower-camel PREDICATE.field}}", {{dquote PREDICATE.value}})
+            {{else if (eq predicate_type 'range') ~}}
+            QueryBuilders
+                .rangeQuery("{{lower-camel PREDICATE.field}}")
+                {{#if PREDICATE.from}}
+                .from("{{PREDICATE.from}}")
+                {{/if}}
+                {{#if PREDICATE.to}}
+                .to("{{PREDICATE.to}}")
+                {{/if}}
+                {{#if (neq PREDICATE.includeLower null)}}
+                .includeLower({{PREDICATE.includeLower}})
+                {{/if}}
+                {{#if (neq PREDICATE.includeUpper null)}}
+                .includeUpper({{PREDICATE.includeUpper}})
+                {{/if}}
+            {{/if}}
+            {{/define}}
+            {{define 'is_runtime_expression' (contains PREDICATE.value '$') ~}}
+            {{#if is_runtime_expression ~}}
+            .apply {
+                if ({{dquote PREDICATE.value}}.isNotEmpty()) {
+                    {{if CLAUSE (concat CLAUSE '(')}}{{trim predicate_body}}{{if CLAUSE ')'}}
+                }
+            }
+            {{else}}
+            {{if CLAUSE (concat '.' CLAUSE '(')}}{{trim predicate_body}}{{if CLAUSE ')'}}
+            {{/if}}
+            {{/if}}
+            {{#if (eq predicate_type 'bool')}}
+            {{if CLAUSE (concat '.' CLAUSE '(')}}QueryBuilders.boolQuery()
+            {{#each PREDICATE.must as |predicate| ~}}
+            {{> QUERY_PREDICATE PREDICATE=predicate CLAUSE="must"}}
+            {{/each}}
+            {{#each PREDICATE.must_not as |predicate| ~}}
+            {{> QUERY_PREDICATE PREDICATE=predicate CLAUSE="mustNot"}}
+            {{/each}}
+            {{#each PREDICATE.should as |predicate| ~}}
+            {{> QUERY_PREDICATE PREDICATE=predicate CLAUSE="should"}}
+            {{/each}}
+            {{#each PREDICATE.filter as |predicate| ~}}
+            {{> QUERY_PREDICATE PREDICATE=predicate CLAUSE="filter"}}
+            {{/each}}
+            {{~ if CLAUSE ')'}}
+            {{/if}}
+            {{/inline}}
 package {{service.namespace}}.search.{{lower-snake search_index.name}}
 
 import org.springframework.stereotype.Component
@@ -11,12 +66,17 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.aggregations.AggregationBuilders
 import org.elasticsearch.search.aggregations.Aggregations
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
-import org.elasticsearch.search.aggregations.metrics.Sum
+import org.elasticsearch.search.aggregations.bucket.filter.Filter
+import org.elasticsearch.search.aggregations.metrics.*
 import org.elasticsearch.search.aggregations.bucket.range.ParsedDateRange
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram
 import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders
+import org.elasticsearch.search.aggregations.pipeline.SimpleValue
 import org.elasticsearch.script.Script
 
 import java.util.concurrent.CompletableFuture
+import java.time.*
 
 @Component
 class {{class_base_name}}SearcherImpl(
@@ -60,56 +120,17 @@ class {{class_base_name}}SearcherImpl(
         .toFuture()
     }
     {{#each search_index.queries as |query| ~}}
-    {{define 'class_base_name' (upper-camel query.name) ~}}
-    override fun {{lower-camel class_base_name}}(
-        input: {{class_base_name}}Input
-    ): CompletableFuture<List<{{class_base_name}}Data>> {
+    {{define 'query_name' (lower-camel query.name) ~}}
+    override fun {{query_name}}(
+        input: {{upper-camel query_name}}Input
+    ): CompletableFuture<{{upper-camel query_name}}Data> {
         {{#each query.parameters as |parameter| ~}}
         {{define 'param_name' (lower-camel parameter.name) ~}}
         val {{param_name}} = input.{{param_name}}
         {{/each}}
         val query = NativeSearchQueryBuilder()
         {{#if query.predicate ~}}
-        .withQuery(
-            {{#*inline 'QUERY_PREDICATE'}}
-            {{define 'predicate_type' PREDICATE.type ~}}
-            {{#if (eq predicate_type 'term')}}
-            QueryBuilders.termQuery("{{PREDICATE.field}}", {{dquote PREDICATE.value}})
-            {{/if}}
-            {{#if (eq predicate_type 'bool')}}
-            QueryBuilders.boolQuery()
-            {{#each PREDICATE.must as |predicate| ~}}
-            .must(
-                {{#shift width=4}}
-                {{> QUERY_PREDICATE PREDICATE=predicate }}
-                {{/shift}}
-            )
-            {{/each}}
-            {{#each PREDICATE.must_not as |predicate| ~}}
-            .mustNot(
-                {{#shift width=4}}
-                {{> QUERY_PREDICATE PREDICATE=predicate }}
-                {{/shift}}
-            )
-            {{/each}}
-            {{#each PREDICATE.should as |predicate| ~}}
-            .should(
-                {{#shift width=4}}
-                {{> QUERY_PREDICATE PREDICATE=predicate }}
-                {{/shift}}
-            )
-            {{/each}}
-            {{#each PREDICATE.filter as |predicate| ~}}
-            .filter(
-                {{#shift width=4}}
-                {{> QUERY_PREDICATE PREDICATE=predicate }}
-                {{/shift}}
-            )
-            {{/each}}
-            {{/if}}
-            {{/inline}}
-            {{> QUERY_PREDICATE PREDICATE=query.predicate }}
-        )
+        {{> QUERY_PREDICATE PREDICATE=query.predicate CLAUSE='withQuery'}}
         {{/if}}
         {{#if query.aggregates ~}}
         {{#each query.aggregates as |aggregate| ~}}
@@ -136,16 +157,15 @@ class {{class_base_name}}SearcherImpl(
                     {{/each}}
                 ), Script({{dquote AGGREGATE.script}})
             )
-            {{else}}
-            .{{lower-camel aggregate_type}}("{{AGGREGATE.name}}")
+            {{else if (eq aggregate_type 'date_range')}}
+            .dateRange("{{AGGREGATE.name}}")
+            .field("{{lower-camel AGGREGATE.field}}")
+            {{#if AGGREGATE.format ~}}
+            .format("{{AGGREGATE.format}}")
             {{/if}}
-            {{#if AGGREGATE.field ~}}
-            .field("{{AGGREGATE.field}}")
+            {{#if AGGREGATE.timezone ~}}
+            .timeZone(ZoneOffset.of("{{AGGREGATE.timezone}}"))
             {{/if}}
-            {{#each AGGREGATE.fields as |field| ~}}
-            .field("{{field.name}}")
-            {{/each}}
-            {{#if (eq aggregate_type 'date_range')}}
             {{#each AGGREGATE.ranges as |range| ~}}
             {{#if (and range.from range.to) ~}}
             {{define 'key' (if range.key range.key (concat range.from '~' range.to)) ~}}
@@ -156,6 +176,26 @@ class {{class_base_name}}SearcherImpl(
             .addUnboundedTo({{key}}, {{dquote range.to}})
             {{/if}}
             {{/each}}
+            {{else if (eq aggregate_type 'date_histogram')}}
+            .dateHistogram("{{AGGREGATE.name}}")
+            .field("{{lower-camel AGGREGATE.field}}")
+            {{define 'interval' AGGREGATE.interval ~}}
+            {{#if (eq interval.type 'calendar')}}
+            .calendarInterval(DateHistogramInterval.{{upper-snake interval.unit}})
+            {{else if (eq interval.type 'fixed')}}
+            .fixedInterval(DateHistogramInterval.{{lower-camel (plural interval.unit)}}({{interval.value}}))
+            {{/if}}
+            {{#if AGGREGATE.format ~}}
+            .format("{{AGGREGATE.format}}")
+            {{/if}}
+            {{#if AGGREGATE.timezone ~}}
+            .timeZone(ZoneOffset.of("{{AGGREGATE.timezone}}"))
+            {{/if}}
+            {{else}}
+            .{{lower-camel aggregate_type}}("{{AGGREGATE.name}}")
+            {{#if AGGREGATE.field ~}}
+            .field("{{lower-camel AGGREGATE.field}}")
+            {{/if}}
             {{/if}}
             {{#each AGGREGATE.sub_aggregates as |sub_aggregate|}}
             .subAggregation(
@@ -168,29 +208,73 @@ class {{class_base_name}}SearcherImpl(
             {{> AGGREGATION AGGREGATE=aggregate }}
         )
         {{/each}}
-        val result = searcher.aggregate(query.build(),
-            {{class_base_name}}Data::class.java,
+        return searcher
+        .aggregate(query.build()/*.apply{ maxResults = 0 }*/,
+            {{upper-camel query_name}}Data::class.java,
             IndexCoordinates.of(INDEX_NAME),
         )
-
-        val countByWord = { aggregations: Aggregations ->
-            val sum = aggregations.get("count") as Sum
-            sum.value.toInt()
-        }
-        val wordsInDateRange = { aggregations: Aggregations ->
-            val terms = aggregations.get("word") as Terms
-            terms.buckets.map { it.keyAsString to it.aggregations }
-        }
-
-        return result.filter{it.name == "date_range@date"}.next().map{
-            val perDateRangeAggregations = (it as ParsedDateRange).buckets.first().aggregations
-            wordsInDateRange(perDateRangeAggregations).map {
-                val word = it.first
-                val perWordAggregations = it.second
-                TrendingWordsRankingData(
-                    word = word,
-                    count = countByWord(perWordAggregations),
-                )
+        .reduce({{upper-camel query_name}}Data()) { {{query_name}}Data, aggregate ->
+            {{query_name}}Data.apply {
+                {{#*inline 'RETRIEVE_DATA_FROM_AGGREGATE'}}
+                {{define 'aggregate_type' AGGREGATE.aggregation_type ~}}
+                {{define 'aggregate_name' AGGREGATE.name ~}}
+                if (aggregate.name == "{{aggregate_name}}") {
+                    {{#if (eq aggregate_type 'date_range') ~}}
+                    {{lower-camel aggregate_name}} = {{upper-camel aggregate_name}}().apply {
+                        (aggregate as ParsedDateRange).buckets.map { bucket ->
+                            val entry = Entry().apply {
+                                docCount = bucket.docCount
+                                bucket.aggregations.forEach { aggregate ->
+                                    {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+                                    {{#shift width=20}}
+                                    {{> RETRIEVE_DATA_FROM_AGGREGATE AGGREGATE=sub_aggregate }}
+                                    {{/shift}}
+                                    {{/each}}
+                                }
+                            }
+                            when (bucket.keyAsString) {
+                                {{#each AGGREGATE.ranges as |range| ~}}
+                                "{{range.key}}" -> {{lower-camel range.key}} = entry
+                                {{/each}}
+                                else -> throw RuntimeException("Unknown key: ${bucket.keyAsString}")
+                            }
+                        }
+                    }
+                    {{else if (or
+                      (eq aggregate_type 'terms')
+                      (eq aggregate_type 'date_histogram')
+                    ) ~}}
+                    {{define 'aggregate_java_class' (case
+                      (eq aggregate_type 'date_histogram') 'Histogram'
+                      (upper-camel aggregate_type)
+                    ) ~}}
+                    {{lower-camel aggregate_name}} = (aggregate as {{aggregate_java_class}}).buckets.map { bucket ->
+                        {{upper-camel aggregate_name}}Entry().apply {
+                            docCount = bucket.docCount
+                            {{lower-camel AGGREGATE.field}} = bucket.keyAsString
+                            {{#if AGGREGATE.sub_aggregates ~}}
+                            bucket.aggregations.forEach { aggregate ->
+                                {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+                                {{#shift width=16}}
+                                {{> RETRIEVE_DATA_FROM_AGGREGATE AGGREGATE=sub_aggregate }}
+                                {{/shift}}
+                                {{/each}}
+                            }
+                            {{/if}}
+                        }
+                    }
+                    {{else if (eq aggregate_type 'filter') ~}}
+                    {{lower-camel aggregate_name}} = (aggregate as Filter).docCount
+                    {{else if (eq aggregate_type 'bucket_script') ~}}
+                    {{lower-camel aggregate_name}} = (aggregate as SimpleValue).value()
+                    {{else}}
+                    {{lower-camel aggregate_name}} = (aggregate as {{upper-camel aggregate_type}}).value()
+                    {{/if}}
+                }
+                {{/inline}}
+                {{#each query.aggregates as |aggregate| ~}}
+                {{> RETRIEVE_DATA_FROM_AGGREGATE AGGREGATE=aggregate}}
+                {{/each}}
             }
         }.toFuture()
         {{/if}}

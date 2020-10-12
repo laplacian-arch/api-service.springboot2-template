@@ -2,7 +2,56 @@
 package {{service.namespace}}.search.{{lower-snake search_index.name}}
 import java.time.*
 
-data class {{upper-camel class_base_name}}Data(
-    val word: String = "",
-    val count: Int = 0,
-)
+class {{upper-camel class_base_name}}Data {
+    {{#*inline 'AGGREGATE_DATA_STRUCTURE'}}
+    {{define 'AGGREGATE_TYPE' AGGREGATE.aggregation_type ~}}
+    {{#if (eq AGGREGATE_TYPE 'date_range') ~}}
+    var {{lower-camel AGGREGATE.name}}: {{upper-camel AGGREGATE.name}}? = null
+    /**
+     * {{AGGREGATE.name}}
+     */
+    inner class {{upper-camel AGGREGATE.name}} {
+        var docCount: Long? = null
+        {{#each AGGREGATE.ranges as |range| ~}}
+        var {{lower-camel range.key}}: Entry? = null
+        {{/each}}
+
+        /**
+         * Data in a range of the {{AGGREGATE.name}}
+         */
+        inner class Entry {
+            var docCount: Long? = null
+            {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+            {{#shift width=8}}
+            {{> AGGREGATE_DATA_STRUCTURE AGGREGATE=sub_aggregate}}
+            {{/shift}}
+            {{/each}}
+        }
+    }
+    {{else if (or
+      (eq AGGREGATE_TYPE 'terms')
+      (eq AGGREGATE_TYPE 'date_histogram')
+    ) ~}}
+    var {{lower-camel AGGREGATE.name}}: List<{{upper-camel AGGREGATE.name}}Entry> = emptyList()
+    /**
+     * The data structure of each entry in the {{AGGREGATE.name}}
+     */
+    inner class {{upper-camel AGGREGATE.name}}Entry {
+        var docCount: Long? = null
+        var {{lower-camel AGGREGATE.field}}: String? = null
+        {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+        {{#shift width=4}}
+        {{> AGGREGATE_DATA_STRUCTURE AGGREGATE=sub_aggregate}}
+        {{/shift}}
+        {{/each}}
+    }
+    {{else if (eq AGGREGATE_TYPE 'filter')}}
+    var {{lower-camel AGGREGATE.name}}: Long? = null
+    {{else}}
+    var {{lower-camel AGGREGATE.name}}: Double? = null
+    {{/if}}
+    {{/inline}}
+    {{#each query.aggregates as |aggregate| ~}}
+    {{> AGGREGATE_DATA_STRUCTURE AGGREGATE=aggregate}}
+    {{/each}}
+}

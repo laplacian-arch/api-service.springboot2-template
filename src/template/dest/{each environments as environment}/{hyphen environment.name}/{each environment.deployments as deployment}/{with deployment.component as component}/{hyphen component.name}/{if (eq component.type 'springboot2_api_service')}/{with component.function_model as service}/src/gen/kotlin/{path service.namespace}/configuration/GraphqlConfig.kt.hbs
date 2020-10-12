@@ -69,6 +69,7 @@ class GraphqlConfig {
     ): RuntimeWiring = RuntimeWiring.newRuntimeWiring()
     .scalar(ExtendedScalars.DateTime)
     .scalar(ExtendedScalars.Date)
+    .scalar(ExtendedScalars.Time)
     .also {
         queryResolver.registerFetcher(it)
         {{#each service.entities_backing_graphql_type as |entity| ~}}

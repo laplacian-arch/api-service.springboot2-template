@@ -20,6 +20,6 @@ interface {{class_base_name}}Searcher {
     {{define 'query_name' (upper-camel query.name) ~}}
     fun {{lower-camel query_name}}(
         input: {{query_name}}Input = {{query_name}}Input()
-    ): CompletableFuture<List<{{query_name}}Data>>
+    ): CompletableFuture<{{query_name}}Data>
     {{/each}}
 }

@@ -76,7 +76,7 @@ class QueryResolver(
         .find{{upper-camel (plural type.name)}}({{upper-camel search_index.name}}SearchInput.from(context.arguments))
         .thenApply{ it.toList() }
     {{#each search_index.queries as |query| ~}}
-    fun {{lower-camel query.name}}(context: DataFetchingEnvironment): CompletableFuture<List<{{upper-camel query.name}}Data>> =
+    fun {{lower-camel query.name}}(context: DataFetchingEnvironment): CompletableFuture<{{upper-camel query.name}}Data> =
         {{lower-camel search_index.name}}Searcher
         .{{lower-camel query.name}}({{upper-camel query.name}}Input.from(context.arguments))
     {{/each}}
