@@ -49,10 +49,3 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     jvmTarget = "$kotlinJvmTarget"
   }
 }
-
-sourceSets {
-  main.java.srcDirs += ["src/gen/java", "src/gen/kotlin"]
-  main.resources.srcDirs += ["src/gen/resources"]
-  test.java.srcDirs += ["src/gen/java", "src/gen/kotlin"]
-  test.resources.srcDirs += ["src/gen/resources"]
-}
