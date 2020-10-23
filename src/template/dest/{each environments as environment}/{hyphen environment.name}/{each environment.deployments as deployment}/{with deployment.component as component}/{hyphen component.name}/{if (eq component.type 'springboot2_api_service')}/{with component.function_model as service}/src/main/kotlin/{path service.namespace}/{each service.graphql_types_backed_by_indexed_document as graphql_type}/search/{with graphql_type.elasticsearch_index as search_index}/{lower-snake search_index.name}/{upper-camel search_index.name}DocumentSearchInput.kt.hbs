@@ -1,5 +1,5 @@
 {{define "class_base_name" (upper-camel search_index.name) ~}}
-{{define 'class_name' (concat class_base_name 'SearchInput') ~}}
+{{define 'class_name' (concat class_base_name 'DocumentSearchInput') ~}}
 {{define 'index_fields' search_index.document_model.stored_properties ~}}
 package {{service.namespace}}.search.{{lower-snake search_index.name}}
 

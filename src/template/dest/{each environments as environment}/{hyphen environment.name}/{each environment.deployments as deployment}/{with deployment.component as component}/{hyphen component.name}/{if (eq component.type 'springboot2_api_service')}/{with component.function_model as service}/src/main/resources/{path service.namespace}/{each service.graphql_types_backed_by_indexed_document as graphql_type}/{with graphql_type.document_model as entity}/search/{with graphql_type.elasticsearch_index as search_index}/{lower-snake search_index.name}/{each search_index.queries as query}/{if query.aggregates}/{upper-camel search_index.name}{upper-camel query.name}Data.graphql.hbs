@@ -1,17 +1,21 @@
 {{#*inline 'AGGREGATE_PROPERTY_DEF' ~}}
 {{define 'AGGREGATE_TYPE' AGGREGATE.aggregation_type ~}}
-{{#if (eq AGGREGATE_TYPE 'date_range') ~}}
+{{~#if (or
+  (eq AGGREGATE_TYPE 'date_range')
+  (eq AGGREGATE_TYPE 'filters')
+) ~}}
     {{lower-camel AGGREGATE.name}}: {{PREFIX}}{{upper-camel AGGREGATE.name}}
-{{else if (or
+{{~else if (or
   (eq AGGREGATE_TYPE 'terms')
   (eq AGGREGATE_TYPE 'date_histogram')
 ) ~}}
     {{lower-camel AGGREGATE.name}}: [{{PREFIX}}{{upper-camel AGGREGATE.name}}Entry]
-{{else if (eq AGGREGATE_TYPE 'filter') }}
+{{~else if (eq AGGREGATE_TYPE 'filter') ~}}
     {{lower-camel AGGREGATE.name}}: Int
-{{else}}
+{{~else if (eq AGGREGATE_TYPE 'bucket_selector') ~}}
+{{~else ~}}
     {{lower-camel AGGREGATE.name}}: Float
-{{/if}}
+{{~/if~}}
 {{/inline}}
 {{#*inline 'AGGREGATE_TYPE_DEF' ~}}
 {{define 'AGGREGATE_TYPE' AGGREGATE.aggregation_type ~}}
@@ -24,6 +28,17 @@ type {{type_name}} {
     {{lower-camel range.key}}: {{entry_type_name}}
     {{/each}}
 }
+{{else if (eq AGGREGATE_TYPE 'filters') ~}}
+type {{type_name}} {
+    {{#each AGGREGATE.filters as |filter| ~}}
+    {{lower-camel filter.key}}: {{entry_type_name}}
+    {{/each}}
+}
+{{/if}}
+{{#if (or
+  (eq AGGREGATE_TYPE 'date_range')
+  (eq AGGREGATE_TYPE 'filters')
+)~}}
 type {{entry_type_name}} {
     docCount: Int!
     {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
@@ -41,16 +56,15 @@ type {{entry_type_name}} {
     {{> AGGREGATE_PROPERTY_DEF PREFIX=entry_type_name AGGREGATE=sub_aggregate }}
     {{/each}}
 }
-{{else}}
 {{/if}}
 {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
 {{> AGGREGATE_TYPE_DEF PREFIX=entry_type_name AGGREGATE=sub_aggregate}}
 {{/each}}
 {{/inline}}
-{{define 'query_data_class_name' (upper-camel (concat query.name ' Data')) ~}}
-#
-# {{query.name}}
-#
+{{define 'query_data_class_name' (upper-camel (concat search_index.name ' ' query.name ' Data')) ~}}
+"""
+The {{query.name}} query response data
+"""
 type {{query_data_class_name}} {
     {{#each query.aggregates as |aggregate| ~}}
     {{#shift width=4}}

@@ -1,8 +1,9 @@
 {{define "class_base_name" (upper-camel search_index.name) ~}}
 package {{service.namespace}}.search.{{lower-snake search_index.name}}
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.*
 
-data class {{class_base_name}}Document(
+class {{class_base_name}}Document {
     {{#each search_index.document_model.stored_properties as |property| ~}}
     {{define 'prop_type' (case
       (eq property.type 'number') 'Int'
@@ -11,6 +12,16 @@ data class {{class_base_name}}Document(
       (eq property.type 'datetime') 'LocalDateTime'
       (upper-camel property.type)
     ) ~}}
-    val {{lower-camel property.name}}: {{prop_type}},
+    {{define 'default_value' (case
+      property.nullable 'null'
+      (eq property.type 'number') '0'
+      (eq property.type 'string') '""'
+      (eq property.type 'date') 'LocalDate.now()'
+      (eq property.type 'time') 'LocalTime.now()'
+      (eq property.type 'datetime') 'LocalDateTime.now()'
+      '""'
+    ) ~}}
+    @JsonProperty("{{property.name}}")
+    var {{lower-camel property.name}}: {{prop_type}}{{if property.nullable '?'}} = {{#if property.default_value}}property.default_value{{else}}{{default_value}}{{/if}}
     {{/each}}
-)
+}

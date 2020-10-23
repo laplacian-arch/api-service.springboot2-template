@@ -39,7 +39,7 @@ repositories {
 
 bootRun {
   jvmArgs = [
-    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5060",
+    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5060",
   ]
 }
 

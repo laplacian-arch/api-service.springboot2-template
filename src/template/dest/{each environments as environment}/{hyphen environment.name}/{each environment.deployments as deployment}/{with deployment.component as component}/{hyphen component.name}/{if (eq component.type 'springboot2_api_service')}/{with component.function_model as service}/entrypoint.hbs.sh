@@ -4,6 +4,9 @@ set -e
 set -x
 
 java \
+  {{#if is_debug ~}}
+  -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5060 \
+  {{/if}}
   -Djava.security.egd=file:/dev/./urandom \
   ${IMAGE_VERSION:+ -Dimage.version=}${IMAGE_VERSION} \
   -jar /app/api.jar \

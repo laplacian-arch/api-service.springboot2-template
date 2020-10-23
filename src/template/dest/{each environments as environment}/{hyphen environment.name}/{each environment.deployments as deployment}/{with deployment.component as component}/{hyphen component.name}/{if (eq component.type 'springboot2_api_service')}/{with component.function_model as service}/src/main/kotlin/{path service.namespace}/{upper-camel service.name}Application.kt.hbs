@@ -23,5 +23,17 @@ class {{class_name}}
  * The entry point of this service.
  */
 fun main(args: Array<String>) {
+    {{#if is_debug ~}}
+    SpringApplication({{class_name}}::class.java).apply {
+        setDefaultProperties(mapOf(
+            "search_engine_client.default.endpoints" to "http://localhost:5200",
+            "spring.r2dbc.url" to "r2dbc:pool:postgresql://localhost:5432/test_db",
+            "spring.r2dbc.username" to "test",
+            "spring.r2dbc.spring.r2dbc.password" to "secret",
+        ))
+        run(*args)
+    }
+    {{else}}
     SpringApplication.run({{class_name}}::class.java, *args)
+    {{/if}}
 }

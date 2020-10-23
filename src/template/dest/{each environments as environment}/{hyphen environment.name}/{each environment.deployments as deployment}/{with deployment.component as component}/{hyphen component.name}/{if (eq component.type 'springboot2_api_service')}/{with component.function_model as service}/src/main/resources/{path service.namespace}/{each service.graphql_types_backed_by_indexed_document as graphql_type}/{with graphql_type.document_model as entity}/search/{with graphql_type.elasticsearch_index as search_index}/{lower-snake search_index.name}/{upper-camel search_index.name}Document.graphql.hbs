@@ -1,21 +1,24 @@
-#
-# {{trim entity.description}}
-#
-type {{entity.class_name}} {
+"""
+The index data structure of the {{search_index.name}}
+"""
+type {{upper-camel search_index.name}}Document {
   {{#each entity.stored_properties as |p| ~}}
   {{define 'prop_type' (case
     (eq p.type "number") 'Int'
     (upper-camel p.type)
   ) ~}}
-  #
-  # {{trim p.description}}
-  #
+  """
+  {{shift p.description width=2}}
+  """
   {{lower-camel p.identifier}}: {{prop_type}}{{if (not p.nullable) '!'}}
   {{/each}}
 
   {{#each graphql_type.relationships as |relationship| ~}}
   {{define 'referencing_type' relationship.referencing_type ~}}
   {{#if (eq referencing_type.resolver_type 'entity_on_database') ~}}
+  """
+  {{relationship.name}}
+  """
   {{lower-camel relationship.name}}: {{upper-camel referencing_type.entity.name}}
   {{/if}}
   {{/each}}

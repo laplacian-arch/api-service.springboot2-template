@@ -1,0 +1,78 @@
+{{define "package" (concat service.namespace '.rpc.rest.' (lower-snake rest_resource.name)) ~}}
+package {{package}}
+
+import org.springframework.stereotype.Component
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.http.HttpMethod
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
+import java.nio.charset.Charset
+
+{{#each rest_resource.operations as |operation| ~}}
+import {{package}}.{{lower-snake operation.name}}.*
+{{/each}}
+
+{{define 'config_prefix' (concat
+  'rest_client.' (lower-snake graphql_type.rest_client_name)
+) ~}}
+@Component
+class {{upper-camel rest_resource.name}}RestResourceClient(
+    @Value("{{concat '\${' config_prefix '.base_url}'}}")
+    private val baseUrl: String,
+    @Value("{{concat '\${' config_prefix '.api_key}'}}")
+    private val apiKey: String,
+): {{upper-camel rest_resource.name}}RestResource {
+    {{#each rest_resource.operations as |operation| ~}}
+
+    /**
+     * {{trim operation.description}}
+     */
+    override fun {{lower-camel operation.name}}(
+        input: {{upper-camel operation.name}}Input
+    ): CompletableFuture<{{upper-camel operation.name}}Response> {
+        {{#each operation.arguments as |argument| ~}}
+        val {{lower-camel argument.name}} = input.{{lower-camel argument.name}}{{#if (eq argument.class_name 'String')}} ?: ""{{/if}}
+        {{/each}}
+        return client
+            .method(HttpMethod.{{upper-snake operation.method}})
+            .uri {
+                it.path(
+                    "{{operation.path}}"
+                )
+                {{#each operation.query_parameters as |parameter| ~}}
+                {{#if parameter.variable ~}}
+                .let { uri ->
+                    {{dquote parameter.value}}.let {
+                        if (it.isEmpty()) uri
+                        else uri.queryParam("{{parameter.name}}", it)
+                    }
+                }
+                {{else ~}}
+                .queryParam("{{parameter.name}}", {{dquote parameter.value}})
+                {{/if}}
+                {{/each}}
+                .build(mapOf(
+                    {{#each operation.path_parameters as |param| ~}}
+                    "{{lower-camel param.name}}" to {{dquote param.value}},
+                    {{/each}}
+                ))
+            }
+            .accept(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)
+            .acceptCharset(Charset.forName("UTF-8"))
+            {{#each operation.http_headers as |header| ~}}
+            .header("{{header.name}}", {{dquote header.value}})
+            {{/each}}
+            .retrieve()
+            .bodyToMono({{upper-camel operation.name}}Response::class.java)
+            .toFuture()
+    }
+    {{/each}}
+
+    private val client = WebClient.builder()
+        .baseUrl(baseUrl)
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .build()
+}

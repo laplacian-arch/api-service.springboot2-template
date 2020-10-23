@@ -3,10 +3,14 @@ package {{package}}
 
 import java.util.concurrent.CompletableFuture
 
+{{#each rest_resource.operations as |operation| ~}}
+import {{package}}.{{lower-snake operation.name}}.*
+{{/each}}
+
 interface {{upper-camel rest_resource.name}}RestResource {
     {{#each rest_resource.operations as |operation| ~}}
     fun {{lower-camel operation.name}}(
-        request: {{upper-camel operation.name}}Request
+        input: {{upper-camel operation.name}}Input
     ): CompletableFuture<{{upper-camel operation.name}}Response>
     {{/each}}
 }

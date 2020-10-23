@@ -5,9 +5,9 @@ scalar Date
 scalar Time
 scalar DateTime
 
-#
-# The root query schema definition.
-#
+"""
+The root query schema definition of {{service.name}}
+"""
 type Query {
   {{#each graphql_types_backed_by_database_table as |type| ~}}
   {{define 'top_level' type.entity}}
@@ -30,37 +30,16 @@ type Query {
   ): {{upper-camel top_level.name}}
   {{/if}}
   {{/each}}
-  {{#each service.graphql_types_backed_by_external_rest_api as |type| ~}}
-  {{define "operation" type.rest_operation ~}}
-  {{lower-camel type.name}}(
-    {{#each operation.path_parameters as |param| ~}}
-    {{lower-camel param.name}}: {{upper-camel param.type}}!
-    {{/each}}
-    {{#each operation.query_parameters as |param| ~}}
-    {{lower-camel param.name}}: {{upper-camel param.type}}
-    {{/each}}
-  ): {{upper-camel type.rest_resource.resource_model.name}}
+  {{#each service.graphql_types_backed_by_external_rest_resource as |type| ~}}
+  """
+  {{type.description}}
+  """
+  {{lower-camel type.name}}: {{upper-camel type.rest_resource.name}}
   {{/each}}
   {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
-  {{lower-camel (plural type.name)}}(
-    {{define 'entity' type.document_model ~}}
-    {{#each entity.stored_properties as |prop| ~}}
-    {{define 'param_type' (case
-      (eq prop.type 'string') 'String'
-      (eq prop.type 'number') 'IntSearchInput'
-      (eq prop.type 'boolean') 'BooleanSearchInput'
-      (upper-camel prop.type)
-    ) ~}}
-    {{lower-camel prop.name}}: {{param_type}}
-    {{/each}}
-  ): [{{upper-camel entity.name}}]!
-  {{/each}}
-  {{#each service.graphql_types_backed_by_elasticsearch_query as |type| ~}}
-  {{define 'query' type.query ~}}
-  {{lower-camel query.name}}(
-  {{#each query.parameters as |parameter| }}
-    {{lower-camel parameter.name}}: {{upper-camel parameter.type}}
-  {{/each}}
-  ): {{upper-camel query.name}}Data
+  """
+  {{type.description}}
+  """
+  {{lower-camel type.name}}: {{upper-camel type.elasticsearch_index.name}}
   {{/each}}
 }

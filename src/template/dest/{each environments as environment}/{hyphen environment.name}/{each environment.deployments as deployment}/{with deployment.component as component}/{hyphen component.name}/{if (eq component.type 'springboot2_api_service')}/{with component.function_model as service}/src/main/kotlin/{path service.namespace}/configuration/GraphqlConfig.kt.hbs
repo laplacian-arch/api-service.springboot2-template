@@ -26,7 +26,11 @@ import {{entity_package}}.{{aggregate.reference_entity.class_name}}Resolver
 {{/each}}
 {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
 {{define "index_name" graphql_type.elasticsearch_index.name ~}}
-import {{service.namespace}}.search.{{lower-snake index_name}}.{{upper-camel index_name}}Resolver
+import {{service.namespace}}.search.{{lower-snake index_name}}.*
+{{/each}}
+{{#each service.graphql_types_backed_by_external_rest_resource as |graphql_type| ~}}
+{{define "rest_resource_name" graphql_type.rest_resource.name ~}}
+import {{service.namespace}}.rpc.rest.{{lower-snake rest_resource_name}}.*
 {{/each}}
 import java.nio.charset.StandardCharsets
 import graphql.schema.idl.RuntimeWiring
@@ -65,10 +69,19 @@ class GraphqlConfig {
         {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
         {{define "index_name" graphql_type.elasticsearch_index.name ~}}
         {{lower-camel index_name}}Resolver: {{upper-camel index_name}}Resolver,
+        {{lower-camel index_name}}DocumentResolver: {{upper-camel index_name}}DocumentResolver,
+        {{/each}}
+        {{#each service.graphql_types_backed_by_external_rest_resource as |graphql_type| ~}}
+        {{define "rest_resource_name" graphql_type.rest_resource.name ~}}
+        {{lower-camel rest_resource_name}}Resolver: {{upper-camel rest_resource_name}}Resolver,
         {{/each}}
     ): RuntimeWiring = RuntimeWiring.newRuntimeWiring()
-    .scalar(ExtendedScalars.DateTime)
-    .scalar(ExtendedScalars.Date)
+    .scalar(ExtendedScalars.newRegexScalar("DateTime").addPattern(
+        """^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$""".toPattern()
+    ).build())
+    .scalar(ExtendedScalars.newRegexScalar("Date").addPattern(
+        """^[0-9]{4}-[0-9]{2}-[0-9]{2}$""".toPattern()
+    ).build())
     .scalar(ExtendedScalars.Time)
     .also {
         queryResolver.registerFetcher(it)
@@ -78,6 +91,11 @@ class GraphqlConfig {
         {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
         {{define "index_name" graphql_type.elasticsearch_index.name ~}}
         {{lower-camel index_name}}Resolver.registerFetcher(it)
+        {{lower-camel index_name}}DocumentResolver.registerFetcher(it)
+        {{/each}}
+        {{#each service.graphql_types_backed_by_external_rest_resource as |graphql_type| ~}}
+        {{define "rest_resource_name" graphql_type.rest_resource.name ~}}
+        {{lower-camel rest_resource_name}}Resolver.registerFetcher(it)
         {{/each}}
     }.build()
 

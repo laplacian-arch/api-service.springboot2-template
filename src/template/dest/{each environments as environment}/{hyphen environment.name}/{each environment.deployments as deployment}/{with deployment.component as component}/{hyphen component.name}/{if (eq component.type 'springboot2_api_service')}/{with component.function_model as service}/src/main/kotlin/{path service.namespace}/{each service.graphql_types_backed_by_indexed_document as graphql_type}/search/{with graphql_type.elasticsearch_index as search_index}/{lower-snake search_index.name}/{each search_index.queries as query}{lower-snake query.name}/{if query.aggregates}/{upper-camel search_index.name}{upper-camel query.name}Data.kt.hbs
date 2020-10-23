@@ -1,20 +1,29 @@
-{{define "class_base_name" (upper-camel query.name) ~}}
-package {{service.namespace}}.search.{{lower-snake search_index.name}}
+{{define "class_base_name" (upper-camel (concat search_index.name ' ' query.name)) ~}}
+package {{service.namespace}}.search.{{lower-snake search_index.name}}.{{lower-snake query.name}}
 import java.time.*
 
 class {{upper-camel class_base_name}}Data {
     {{#*inline 'AGGREGATE_DATA_STRUCTURE'}}
     {{define 'AGGREGATE_TYPE' AGGREGATE.aggregation_type ~}}
-    {{#if (eq AGGREGATE_TYPE 'date_range') ~}}
+    {{#if (or
+      (eq AGGREGATE_TYPE 'date_range')
+      (eq AGGREGATE_TYPE 'filters')
+    )~}}
     var {{lower-camel AGGREGATE.name}}: {{upper-camel AGGREGATE.name}}? = null
     /**
      * {{AGGREGATE.name}}
      */
     inner class {{upper-camel AGGREGATE.name}} {
+        {{#if (eq AGGREGATE_TYPE 'date_range') ~}}
         var docCount: Long? = null
         {{#each AGGREGATE.ranges as |range| ~}}
         var {{lower-camel range.key}}: Entry? = null
         {{/each}}
+        {{else if (eq AGGREGATE_TYPE 'filters')~}}
+        {{#each AGGREGATE.filters as |filter| ~}}
+        var {{lower-camel filter.key}}: Entry? = null
+        {{/each}}
+        {{/if}}
 
         /**
          * Data in a range of the {{AGGREGATE.name}}
@@ -45,8 +54,12 @@ class {{upper-camel class_base_name}}Data {
         {{/shift}}
         {{/each}}
     }
-    {{else if (eq AGGREGATE_TYPE 'filter')}}
+    {{else if (eq AGGREGATE_TYPE 'filter') ~}}
     var {{lower-camel AGGREGATE.name}}: Long? = null
+    {{else if (or
+      (eq AGGREGATE_TYPE 'bucket_selector')
+      (eq AGGREGATE_TYPE 'bucket_sort')
+    ) ~}}
     {{else}}
     var {{lower-camel AGGREGATE.name}}: Double? = null
     {{/if}}

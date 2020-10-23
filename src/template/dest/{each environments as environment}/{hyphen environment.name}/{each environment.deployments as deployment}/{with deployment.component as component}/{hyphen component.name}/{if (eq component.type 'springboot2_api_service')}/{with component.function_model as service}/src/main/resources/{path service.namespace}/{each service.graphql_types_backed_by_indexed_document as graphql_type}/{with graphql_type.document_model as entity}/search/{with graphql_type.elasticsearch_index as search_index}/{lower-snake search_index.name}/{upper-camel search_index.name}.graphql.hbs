@@ -1,0 +1,35 @@
+"""
+{{search_index.description}}
+"""
+type {{upper-camel search_index.name}} {
+  """
+  Search the indexed documents
+  """
+  searchIndex(
+    {{define 'entity' type.document_model ~}}
+    {{#each entity.stored_properties as |prop| ~}}
+    {{define 'param_type' (case
+      (eq prop.type 'string') 'String'
+      (eq prop.type 'number') 'IntSearchInput'
+      (eq prop.type 'boolean') 'BooleanSearchInput'
+      (upper-camel prop.type)
+    ) ~}}
+    {{lower-camel prop.name}}: {{param_type}}
+    {{/each}}
+  ): [{{upper-camel entity.name}}Document]!
+
+  {{#each search_index.queries as |query| ~}}
+  {{define 'response_data_class' (if query.aggregates
+    (concat (upper-camel (concat search_index.name ' ' query.name 'Data')))
+    (concat '[' (upper-camel search_index.name) 'Document!]')
+  ) ~}}
+  """
+  {{shift query.description width=2}}
+  """
+  {{lower-camel query.name}}(
+  {{#each query.parameters as |parameter| }}
+    {{lower-camel parameter.name}}: {{parameter.graphql_type}}{{if parameter.required '!'}}
+  {{/each}}
+  ): {{response_data_class}}!
+  {{/each}}
+}

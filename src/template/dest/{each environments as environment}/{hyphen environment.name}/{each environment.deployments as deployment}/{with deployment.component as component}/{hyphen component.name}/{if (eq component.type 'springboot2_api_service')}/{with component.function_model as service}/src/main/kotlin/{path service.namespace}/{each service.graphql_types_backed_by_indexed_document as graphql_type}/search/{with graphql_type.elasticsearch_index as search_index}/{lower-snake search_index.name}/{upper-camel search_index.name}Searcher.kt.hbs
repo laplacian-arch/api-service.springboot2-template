@@ -6,6 +6,10 @@ import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperatio
 
 import java.util.concurrent.CompletableFuture
 
+{{#each search_index.queries as |query| ~}}
+import {{service.namespace}}.search.{{lower-snake search_index.name}}.{{lower-snake query.name}}.*
+{{/each}}
+
 /**
  * A search interface against {{search_index.name}} index on the search engine.
  */
@@ -13,13 +17,21 @@ interface {{class_base_name}}Searcher {
     /**
      * Finds {{plural class_base_name}} which matches the given conditions.
      */
-    fun find{{plural class_base_name}}(
-        input: {{class_base_name}}SearchInput = {{class_base_name}}SearchInput()
+    fun searchDocument(
+        input: {{class_base_name}}DocumentSearchInput = {{class_base_name}}DocumentSearchInput()
     ): CompletableFuture<List<{{class_base_name}}Document>>
     {{#each search_index.queries as |query| ~}}
-    {{define 'query_name' (upper-camel query.name) ~}}
+    {{define 'query_name' (lower-camel query.name) ~}}
+    {{define 'class_base_name' (upper-camel (concat search_index.name ' ' query_name)) ~}}
+    {{define 'response_data_class' (if query.aggregates
+      (concat (upper-camel (concat search_index.name ' ' query.name 'Data')))
+      (concat 'List<' (upper-camel search_index.name) 'Document>')
+    ) ~}}
+    /**
+     * {{trim query.description}}
+     */
     fun {{lower-camel query_name}}(
-        input: {{query_name}}Input = {{query_name}}Input()
-    ): CompletableFuture<{{query_name}}Data>
+        input: {{class_base_name}}Input = {{class_base_name}}Input()
+    ): CompletableFuture<{{response_data_class}}>
     {{/each}}
 }

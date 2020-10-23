@@ -1,9 +1,0 @@
-{{define "package" (concat service.namespace '.rpc.rest.' (lower-snake rest_resource.name)) ~}}
-package {{package}}
-
-data class {{upper-camel operation.name}}Response(
-    {{define 'entity' rest_resource.resource_model ~}}
-    {{#each entity.stored_properties as |property| ~}}
-    val {{lower-camel property.name}}: {{upper-camel property.class_name}}{{if property.nullable '?'}},
-    {{/each}}
-)

@@ -1,0 +1,39 @@
+{{define "class_base_name" (upper-camel rest_resource.name) ~}}
+package {{service.namespace}}.rpc.rest.{{lower-snake rest_resource.name}}
+
+import org.dataloader.DataLoader
+import org.dataloader.DataLoaderRegistry
+import org.springframework.stereotype.Component
+import graphql.schema.idl.RuntimeWiring
+import graphql.schema.idl.TypeRuntimeWiring
+import graphql.schema.DataFetchingEnvironment
+import java.util.concurrent.CompletableFuture
+
+{{#each rest_resource.operations as |operation| ~}}
+import {{service.namespace}}.rpc.rest.{{lower-snake rest_resource.name}}.{{lower-snake operation.name}}.*
+{{/each}}
+
+/**
+ * A reactive implementation of the {{graphql_type.name}} graphql type resolver.
+ */
+@Component
+class {{class_base_name}}Resolver(
+    {{define 'client_name' (concat class_base_name 'RestResourceClient') ~}}
+    val {{lower-camel client_name}}: {{upper-camel client_name}},
+) {
+    {{#each rest_resource.operations as |operation| ~}}
+    {{define 'operation_name' (lower-camel operation.name) ~}}
+    {{define 'response_data_class' (concat (upper-camel operation_name) 'Response') ~}}
+    fun {{operation_name}}(context: DataFetchingEnvironment): CompletableFuture<{{response_data_class}}> =
+        {{lower-camel client_name}}
+        .{{operation_name}}({{upper-camel operation_name}}Input.from(context.arguments))
+    {{/each}}
+
+    fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
+        TypeRuntimeWiring.newTypeWiring("{{class_base_name}}")
+        {{#each rest_resource.operations as |operation| ~}}
+        {{define 'operation_name' (lower-camel operation.name) ~}}
+        .dataFetcher("{{operation_name}}") { env -> {{operation_name}}(env)}
+        {{/each}}
+    )
+}

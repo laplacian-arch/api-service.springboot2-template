@@ -3,13 +3,6 @@ package {{package}}
 {{#each service.top_level_entities_backing_graphql_type as |entity| ~}}
 import {{entity.namespace}}.entity.{{lower-snake entity.name}}.*
 {{/each}}
-{{#each service.rest_resources_backing_graphql_type as |rest_resource| ~}}
-import {{concat service.namespace '.rpc.rest.' (lower-snake rest_resource.name) '.*' }}
-{{/each}}
-{{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
-{{define "index_name" graphql_type.elasticsearch_index.name ~}}
-import {{service.namespace}}.search.{{lower-snake index_name}}.*
-{{/each}}
 import org.springframework.stereotype.Component
 import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.TypeRuntimeWiring
@@ -28,10 +21,6 @@ class QueryResolver(
     {{#each service.graphql_types_backed_by_external_rest_api as |type| ~}}
     {{define "rest_resource_name" (concat type.rest_resource.name '_rest_resource') ~}}
     val {{lower-camel rest_resource_name}}: {{upper-camel rest_resource_name}},
-    {{/each}}
-    {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
-    {{define 'searcher_name' (concat type.document_model.name ' searcher') ~}}
-    val {{lower-camel searcher_name}}: {{upper-camel searcher_name}},
     {{/each}}
 ) {
     {{#each graphql_types_backed_by_database_table as |type|~}}
@@ -57,31 +46,6 @@ class QueryResolver(
         .count{{upper-camel (plural top_level.name)}}({{upper-camel top_level.name}}SearchInput.from(context.arguments))
     {{/each}}
 
-    {{#each service.graphql_types_backed_by_external_rest_api as |type| ~}}
-    {{define "rest_resource" type.rest_resource ~}}
-    {{define "operation" type.rest_operation ~}}
-    fun {{lower-camel operation.name}}(context: DataFetchingEnvironment): CompletableFuture<{{upper-camel operation.name}}Response> =
-        {{lower-camel rest_resource.name}}RestResource
-        .{{lower-camel operation.name}}({{upper-camel operation.name}}Request(
-            {{#each operation.path_parameters as |param| ~}}
-            {{lower-camel param.name}} = context.getArgument("{{lower-camel param.name}}"),
-            {{/each}}
-        ))
-    {{/each}}
-
-    {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
-    {{define 'search_index' type.elasticsearch_index ~}}
-    fun {{lower-camel (plural type.name)}}(context: DataFetchingEnvironment): CompletableFuture<List<{{upper-camel search_index.name}}Document>> =
-        {{lower-camel search_index.name}}Searcher
-        .find{{upper-camel (plural type.name)}}({{upper-camel search_index.name}}SearchInput.from(context.arguments))
-        .thenApply{ it.toList() }
-    {{#each search_index.queries as |query| ~}}
-    fun {{lower-camel query.name}}(context: DataFetchingEnvironment): CompletableFuture<{{upper-camel query.name}}Data> =
-        {{lower-camel search_index.name}}Searcher
-        .{{lower-camel query.name}}({{upper-camel query.name}}Input.from(context.arguments))
-    {{/each}}
-    {{/each}}
-
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
         TypeRuntimeWiring.newTypeWiring("Query")
         {{#each graphql_types_backed_by_database_table as |type| ~}}
@@ -92,16 +56,11 @@ class QueryResolver(
         .dataFetcher("numberOf{{upper-camel plural_name}}") { env -> numberOf{{upper-camel plural_name}}(env) }
         .dataFetcher("{{singular_name}}") { env -> {{singular_name}}(env)}
         {{/each}}
-        {{#each service.graphql_types_backed_by_external_rest_api as |type| ~}}
-        .dataFetcher("{{lower-camel type.name}}") { env -> {{lower-camel type.rest_operation.name}}(env)}
+        {{#each service.graphql_types_backed_by_external_rest_resource as |graphql_type| ~}}
+        .dataFetcher("{{lower-camel graphql_type.name}}") { _ -> emptyMap<String, String>()}
         {{/each}}
-        {{#each service.graphql_types_backed_by_indexed_document as |type| ~}}
-        {{define 'search_index' type.elasticsearch_index ~}}
-        {{define 'plural_name' (lower-camel (plural type.document_model.name)) ~}}
-        .dataFetcher("{{plural_name}}") { env -> {{plural_name}}(env)}
-        {{#each search_index.queries as |query| ~}}
-        .dataFetcher("{{lower-camel query.name}}") { env -> {{lower-camel query.name}}(env)}
-        {{/each}}
+        {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
+        .dataFetcher("{{lower-camel graphql_type.name}}") { _ -> emptyMap<String, String>()}
         {{/each}}
     )
 
