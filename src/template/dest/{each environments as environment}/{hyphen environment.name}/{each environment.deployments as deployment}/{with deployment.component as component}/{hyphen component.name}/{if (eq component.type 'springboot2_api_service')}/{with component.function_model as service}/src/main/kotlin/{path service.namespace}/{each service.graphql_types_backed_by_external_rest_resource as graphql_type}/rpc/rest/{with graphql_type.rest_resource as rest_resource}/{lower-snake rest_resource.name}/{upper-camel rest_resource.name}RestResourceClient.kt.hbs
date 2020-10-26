@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import java.nio.charset.Charset
+import com.fasterxml.jackson.module.kotlin.*
 
 {{#each rest_resource.operations as |operation| ~}}
 import {{package}}.{{lower-snake operation.name}}.*
@@ -36,6 +37,7 @@ class {{upper-camel rest_resource.name}}RestResourceClient(
         {{#each operation.arguments as |argument| ~}}
         val {{lower-camel argument.name}} = input.{{lower-camel argument.name}}{{#if (eq argument.class_name 'String')}} ?: ""{{/if}}
         {{/each}}
+        val JSON = {obj:Any? -> jacksonObjectMapper().writeValueAsString(obj)}
         return client
             .method(HttpMethod.{{upper-snake operation.method}})
             .uri {
@@ -43,11 +45,19 @@ class {{upper-camel rest_resource.name}}RestResourceClient(
                     "{{operation.path}}"
                 )
                 {{#each operation.query_parameters as |parameter| ~}}
-                {{#if parameter.variable ~}}
+                {{#if parameter.multiple ~}}
+                jacksonObjectMapper().readValue<List<String>>({{dquote parameter.value}})
+                .let {
+                    if (it.isEmpty()) uri
+                    else it.fold(uri) { acc, each{{lower-camel parameter.name}} ->
+                        acc.queryParam({{dquote parameter.name}}, each{{lower-camel parameter.name}})
+                    }
+                }
+                {{else if parameter.variable ~}}
                 .let { uri ->
                     {{dquote parameter.value}}.let {
                         if (it.isEmpty()) uri
-                        else uri.queryParam("{{parameter.name}}", it)
+                        else uri.queryParam({{dquote parameter.name}}, it)
                     }
                 }
                 {{else ~}}
