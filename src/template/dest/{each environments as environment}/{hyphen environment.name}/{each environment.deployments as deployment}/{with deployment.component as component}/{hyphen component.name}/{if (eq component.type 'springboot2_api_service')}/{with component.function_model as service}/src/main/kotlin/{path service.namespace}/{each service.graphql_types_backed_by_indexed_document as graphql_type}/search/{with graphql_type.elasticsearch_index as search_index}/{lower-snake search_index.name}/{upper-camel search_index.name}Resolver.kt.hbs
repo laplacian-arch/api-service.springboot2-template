@@ -1,5 +1,5 @@
-{{define "class_base_name" (upper-camel search_index.name) ~}}
-package {{service.namespace}}.search.{{lower-snake search_index.name}}
+{{define "class_base_name" (upper-camel graphql_type.name) ~}}
+package {{service.namespace}}.search.{{lower-snake graphql_type.name}}
 
 import org.dataloader.DataLoader
 import org.dataloader.DataLoaderRegistry
@@ -21,21 +21,21 @@ class {{class_base_name}}Resolver(
     {{define 'searcher_name' (concat class_base_name 'Searcher') ~}}
     val {{lower-camel searcher_name}}: {{upper-camel searcher_name}},
 ) {
-    {{define 'search_index_method_name' 'searchDocument'}}
-    fun {{search_index_method_name}}(context: DataFetchingEnvironment): CompletableFuture<List<{{upper-camel search_index.name}}Document>> =
-        {{lower-camel search_index.name}}Searcher
-        .searchDocument({{upper-camel search_index.name}}DocumentSearchInput.from(context.arguments))
+    {{define 'search_index_method_name' (lower-camel graphql_type.default_searcher_name) ~}}
+    fun {{search_index_method_name}}(context: DataFetchingEnvironment): CompletableFuture<List<{{upper-camel graphql_type.name}}Document>> =
+        {{lower-camel graphql_type.name}}Searcher
+        .{{search_index_method_name}}({{upper-camel graphql_type.name}}DocumentSearchInput.from(context.arguments))
         .thenApply{ it.toList() }
     {{#each search_index.queries as |query| ~}}
     {{define 'query_name' (lower-camel query.name) ~}}
     {{define 'class_base_name' (upper-camel (concat search_index.name ' ' query_name)) ~}}
     {{define 'response_data_class' (if query.aggregates
-      (concat (upper-camel (concat search_index.name ' ' query.name 'Data')))
-      (concat 'List<' (upper-camel search_index.name) 'Document>')
+      (concat (upper-camel (concat graphql_type.name ' ' query.name 'Data')))
+      (concat 'List<' (upper-camel graphql_type.name) 'Document>')
     ) ~}}
     fun {{lower-camel query_name}}(context: DataFetchingEnvironment): CompletableFuture<{{response_data_class}}> =
-        {{lower-camel search_index.name}}Searcher
-        .{{lower-camel query.name}}({{upper-camel search_index.name}}{{upper-camel query.name}}Input.from(context.arguments))
+        {{lower-camel graphql_type.name}}Searcher
+        .{{lower-camel query.name}}({{upper-camel graphql_type.name}}{{upper-camel query.name}}Input.from(context.arguments))
     {{/each}}
 
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(

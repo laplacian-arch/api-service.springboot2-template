@@ -101,12 +101,16 @@ class GraphqlConfig {
 
     @Bean
     fun buildDataLoaderRegistry(
-        {{#each service.graphql_types_backed_by_database_table as |type| ~}}
-        {{lower-camel type.entity.name}}Resolver: {{upper-camel type.entity.name}}Resolver,
+        {{#each service.graphql_type_relationships as |relationship| ~}}
+        {{#if (eq relationship.type 'indexed_document') ~}}
+        {{lower-camel relationship.resolver_name}}: {{upper-camel relationship.resolver_name}},
+        {{/if}}
         {{/each}}
     ): DataLoaderRegistry = DataLoaderRegistry().also {
-        {{#each service.graphql_types_backed_by_database_table as |type| ~}}
-        {{lower-camel type.entity.name}}Resolver.registerLoader(it)
+        {{#each service.graphql_type_relationships as |relationship| ~}}
+        {{#if (eq relationship.type 'indexed_document') ~}}
+        {{lower-camel relationship.resolver_name}}.registerLoader(it)
+        {{/if}}
         {{/each}}
     }
 }

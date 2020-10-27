@@ -1,10 +1,11 @@
 """
-The index data structure of the {{search_index.name}}
+The index data structure of the {{graphql_type.name}}
 """
-type {{upper-camel search_index.name}}Document {
+type {{upper-camel graphql_type.name}}Document {
   {{#each entity.stored_properties as |p| ~}}
   {{define 'prop_type' (case
     (eq p.type "number") 'Int'
+    (eq p.type "datetime") 'DateTime'
     (upper-camel p.type)
   ) ~}}
   """
@@ -14,12 +15,12 @@ type {{upper-camel search_index.name}}Document {
   {{/each}}
 
   {{#each graphql_type.relationships as |relationship| ~}}
-  {{define 'referencing_type' relationship.referencing_type ~}}
-  {{#if (eq referencing_type.resolver_type 'entity_on_database') ~}}
   """
-  {{relationship.name}}
+  {{shift relationship.description width=2}}
   """
-  {{lower-camel relationship.name}}: {{upper-camel referencing_type.entity.name}}
-  {{/if}}
+  {{define 'result_type' (printf
+    (if relationship.multiple '[%s!]' '%s') relationship.field_type_name
+  ) ~}}
+  {{lower-camel relationship.name}}: {{result_type}}{{if (not relationship.nullable) '!'}}
   {{/each}}
 }

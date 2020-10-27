@@ -1,15 +1,20 @@
 """
-{{search_index.description}}
+{{graphql_type.description}}
 """
-type {{upper-camel search_index.name}} {
+type {{upper-camel graphql_type.name}} {
   """
   Search the indexed documents
   """
-  searchIndex(
+  {{lower-camel graphql_type.default_searcher_name}}(
     {{define 'entity' type.document_model ~}}
     {{#each entity.stored_properties as |prop| ~}}
     {{define 'param_type' (case
-      (eq prop.type 'string') 'String'
+      (or
+        (eq prop.type 'string')
+        (eq prop.type 'date')
+        (eq prop.type 'datetime')
+        (eq prop.type 'time')
+      ) 'StringSearchInput'
       (eq prop.type 'number') 'IntSearchInput'
       (eq prop.type 'boolean') 'BooleanSearchInput'
       (upper-camel prop.type)

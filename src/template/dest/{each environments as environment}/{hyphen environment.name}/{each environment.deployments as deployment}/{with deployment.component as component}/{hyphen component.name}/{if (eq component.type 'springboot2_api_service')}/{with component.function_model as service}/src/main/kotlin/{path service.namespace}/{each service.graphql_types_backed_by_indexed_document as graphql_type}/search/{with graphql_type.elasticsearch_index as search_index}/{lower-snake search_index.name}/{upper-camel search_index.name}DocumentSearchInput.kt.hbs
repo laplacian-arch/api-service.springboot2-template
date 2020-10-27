@@ -12,19 +12,19 @@ data class {{class_name}} (
     {{define 'type_and_initializer' (case
       (eq property.type 'number') 'IntSearchInput = IntSearchInput()'
       (eq property.type 'boolean') 'BooleanSearchInput = BooleanSearchInput()'
-      (eq property.type 'string') 'String = ""'
-      'LocalDate? = null'
+      (or
+        (eq property.type 'string')
+        (eq property.type 'datetime')
+        (eq property.type 'date')
+        (eq property.type 'time')
+      ) 'StringSearchInput = StringSearchInput()'
     ) ~}}
     val {{lower-camel property.name}}: {{type_and_initializer}},
     {{/each}}
 ) {
     fun isEmpty(): Boolean =
         {{#each index_fields as |property| ~}}
-        {{#if (eq property.type 'date') ~}}
-        {{lower-camel property.name}} == null{{if (not @last) ' &&'}}
-        {{else}}
         {{lower-camel property.name}}.isEmpty(){{if (not @last) ' &&'}}
-        {{/if}}
         {{/each}}
 
     companion object {
@@ -32,15 +32,18 @@ data class {{class_name}} (
             return {{class_name}}(
                 {{#each index_fields as |property| ~}}
                 {{define 'prop_name' (lower-camel property.name) ~}}
-                {{define 'prop_type' (lower-camel property.type) ~}}
-                {{#if (eq prop_type 'string') ~}}
-                {{prop_name}} = args["{{prop_name}}"] as? String ?: "",
+                {{#if (or
+                  (eq property.type 'string')
+                  (eq property.type 'datetime')
+                  (eq property.type 'date')
+                  (eq property.type 'time')
+                ) ~}}
+                {{prop_name}} = StringSearchInput.from(args["{{prop_name}}"]),
                 {{else if (eq prop_type 'number') ~}}
                 {{prop_name}} = IntSearchInput.from(args["{{prop_name}}"]),
                 {{else if (eq prop_type 'boolean') ~}}
                 {{prop_name}} = BooleanSearchInput.from(args["{{prop_name}}"]),
                 {{else if (eq prop_type 'date') ~}}
-                {{prop_name}} = args["{{prop_name}}"] as? LocalDate,
                 {{else}}
                 {{prop_name}} = args["{{prop_name}}"],
                 {{/if}}
