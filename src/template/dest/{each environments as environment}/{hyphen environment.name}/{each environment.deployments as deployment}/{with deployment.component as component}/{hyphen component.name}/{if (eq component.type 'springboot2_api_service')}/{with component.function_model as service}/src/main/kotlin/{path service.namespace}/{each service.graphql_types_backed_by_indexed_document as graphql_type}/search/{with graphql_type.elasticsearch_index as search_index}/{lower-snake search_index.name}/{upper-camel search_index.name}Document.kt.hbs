@@ -10,18 +10,18 @@ class {{class_name}} {
     {{#each model.stored_properties as |property| ~}}
     {{define 'prop_type' (case
       (eq property.type 'number') 'Int'
-      (eq property.type 'date') 'LocalDate'
-      (eq property.type 'time') 'LocalTime'
-      (eq property.type 'datetime') 'LocalDateTime'
+      (eq property.type 'date') 'String'
+      (eq property.type 'time') 'String'
+      (eq property.type 'datetime') 'String'
       (upper-camel property.type)
     ) ~}}
     {{define 'default_value' (case
       property.nullable 'null'
       (eq property.type 'number') '0'
       (eq property.type 'string') '""'
-      (eq property.type 'date') 'LocalDate.now()'
-      (eq property.type 'time') 'LocalTime.now()'
-      (eq property.type 'datetime') 'LocalDateTime.now()'
+      (eq property.type 'date') '""'
+      (eq property.type 'time') '""'
+      (eq property.type 'datetime') '""'
       '""'
     ) ~}}
     @Field(name={{dquote property.name}})

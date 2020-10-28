@@ -30,6 +30,7 @@ class {{CLASS_NAME}} {
     {{/each}}
 
     {{#each MODEL.stored_relationships as |relationship| ~}}
+    @JsonProperty("{{relationship.name}}")
     {{#if relationship.multiple ~}}
     var {{lower-camel relationship.name}}: List<{{upper-camel relationship.name}}> = emptyList()
     {{else ~}}

@@ -1,0 +1,38 @@
+{{define "package" (concat service.namespace '.rpc.rest') ~}}
+package {{package}}
+
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.ExchangeStrategies
+import org.springframework.web.util.UriBuilder
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import com.fasterxml.jackson.module.kotlin.*
+
+open class RestResourceClientBase {
+
+    fun queryParam(uri: UriBuilder, key: String, value: String) =
+        if (value.isEmpty()) uri else uri.queryParam(key, value)
+
+    fun queryParams(uri: UriBuilder, key: String, valuesJson: String): UriBuilder {
+        val values = jacksonObjectMapper().readValue<List<String>>(valuesJson)
+        return if (values.isEmpty()) uri else values.fold(uri) { acc, each ->
+            acc.queryParam(key, each)
+        }
+    }
+
+    fun JSON(obj:Any?) = jacksonObjectMapper().writeValueAsString(obj)
+
+    fun client(baseUrl: String): WebClient {
+        return WebClient
+        .builder()
+        .exchangeStrategies(
+            ExchangeStrategies
+            .builder()
+            .codecs { it.defaultCodecs().maxInMemorySize(10 * 1024 * 1024) }
+            .build()
+        )
+        .baseUrl(baseUrl)
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        .build()
+    }
+}

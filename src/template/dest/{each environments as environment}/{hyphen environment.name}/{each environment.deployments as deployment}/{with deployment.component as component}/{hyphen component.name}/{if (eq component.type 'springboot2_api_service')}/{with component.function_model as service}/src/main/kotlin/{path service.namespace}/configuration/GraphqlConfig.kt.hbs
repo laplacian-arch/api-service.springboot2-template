@@ -77,7 +77,7 @@ class GraphqlConfig {
         {{/each}}
     ): RuntimeWiring = RuntimeWiring.newRuntimeWiring()
     .scalar(ExtendedScalars.newRegexScalar("DateTime").addPattern(
-        """^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$""".toPattern()
+        """^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z?$""".toPattern()
     ).build())
     .scalar(ExtendedScalars.newRegexScalar("Date").addPattern(
         """^[0-9]{4}-[0-9]{2}-[0-9]{2}$""".toPattern()

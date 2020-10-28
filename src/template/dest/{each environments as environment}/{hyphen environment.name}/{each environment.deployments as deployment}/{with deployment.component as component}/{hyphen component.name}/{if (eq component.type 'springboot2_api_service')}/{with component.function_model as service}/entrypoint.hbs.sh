@@ -24,14 +24,8 @@ java \
   {{env_prefix}}_USER:+ --{{prop_prefix}}.username=}{{env_prefix}}_USER} \
   {{env_prefix}}_PASS:+ --{{prop_prefix}}.password=}{{env_prefix}}_PASS} \
   {{/each}}
-  {{#each service.rest_clients as |client| ~}}
-  {{define "env_prefix" (concat '${REST_CLIENT_' (upper-snake client.name)) ~}}
-  {{define "prop_prefix" (concat 'rest_client.' (lower-snake client.name)) ~}}
-  {{env_prefix}}_BASE_URL:+ --{{prop_prefix}}.base_url=}{{env_prefix}}_BASE_URL} \
-  {{env_prefix}}_API_KEY:+ --{{prop_prefix}}.api_key=}{{env_prefix}}_API_KEY} \
+  {{#each service.configuration_categories as |category| ~}}
+  {{#each category.configurations as |config| ~}}
+  {{printf '${%s:+ --%s=}${%s}' config.environment_variable_name config.key config.environment_variable_name}} \
   {{/each}}
-  {{#each service.search_engine_clients as |client| ~}}
-  {{define "env_prefix" (concat '${SEARCH_ENGINE_CLIENT_' (upper-snake client.name)) ~}}
-  {{define "prop_prefix" (concat 'search_engine_client.' (lower-snake client.name)) ~}}
-  {{env_prefix}}_ENDPOINTS:+ --{{prop_prefix}}.endpoints=}{{env_prefix}}_ENDPOINTS} \
   {{/each}}

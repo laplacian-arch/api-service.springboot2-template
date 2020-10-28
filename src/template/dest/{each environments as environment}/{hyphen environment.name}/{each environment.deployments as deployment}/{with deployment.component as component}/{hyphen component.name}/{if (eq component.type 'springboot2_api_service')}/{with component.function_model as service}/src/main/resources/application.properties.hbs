@@ -12,12 +12,8 @@
 {{prefix}}.pool.max-idle-time=1m
 {{prefix}}.pool.validation-query=SELECT 1
 {{/each}}
-{{#each service.rest_clients as |client| ~}}
-{{define "prefix" (concat 'rest_client.' (lower-snake client.name)) ~}}
-{{prefix}}.base_url=
-{{prefix}}.api_key=
+{{#each service.configuration_categories as |category| ~}}
+{{#each category.configurations as |config| ~}}
+{{config.key}}={{config.default_value}}
 {{/each}}
-{{#each service.search_engine_clients as |client| ~}}
-{{define "prefix" (concat 'search_engine_client.' (lower-snake client.name)) ~}}
-{{prefix}}.endpoints=
 {{/each}}
