@@ -55,7 +55,22 @@ class {{upper-camel class_base_name}}Data {
         {{/each}}
     }
     {{else if (eq AGGREGATE_TYPE 'filter') ~}}
+    {{~#if AGGREGATE.sub_aggregates ~}}
+    var {{lower-camel AGGREGATE.name}}: {{upper-camel AGGREGATE.name}}? = null
+    /**
+     * {{AGGREGATE.name}}
+     */
+    inner class {{upper-camel AGGREGATE.name}} {
+        var docCount: Long? = null
+        {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+        {{#shift width=4}}
+        {{> AGGREGATE_DATA_STRUCTURE AGGREGATE=sub_aggregate}}
+        {{/shift}}
+        {{/each}}
+    }
+    {{else}}
     var {{lower-camel AGGREGATE.name}}: Long? = null
+    {{/if}}
     {{else if (or
       (eq AGGREGATE_TYPE 'bucket_selector')
       (eq AGGREGATE_TYPE 'bucket_sort')

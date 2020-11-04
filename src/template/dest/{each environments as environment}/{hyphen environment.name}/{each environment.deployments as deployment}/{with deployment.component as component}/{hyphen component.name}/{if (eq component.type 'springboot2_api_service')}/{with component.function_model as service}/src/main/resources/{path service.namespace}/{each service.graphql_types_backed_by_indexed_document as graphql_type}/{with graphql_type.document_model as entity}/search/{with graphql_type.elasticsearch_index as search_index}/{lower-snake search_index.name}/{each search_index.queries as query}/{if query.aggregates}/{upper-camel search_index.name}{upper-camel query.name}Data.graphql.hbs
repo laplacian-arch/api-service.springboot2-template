@@ -11,7 +11,11 @@
 ) ~}}
     {{lower-camel AGGREGATE.name}}: [{{PREFIX}}{{upper-camel AGGREGATE.name}}Entry]
 {{~else if (eq AGGREGATE_TYPE 'filter') ~}}
+    {{~#if AGGREGATE.sub_aggregates ~}}
+    {{lower-camel AGGREGATE.name}}: {{PREFIX}}{{upper-camel AGGREGATE.name}}
+    {{~else~}}
     {{lower-camel AGGREGATE.name}}: Int
+    {{~/if~}}
 {{~else if (eq AGGREGATE_TYPE 'bucket_selector') ~}}
 {{~else ~}}
     {{lower-camel AGGREGATE.name}}: Float
@@ -19,7 +23,7 @@
 {{/inline}}
 {{#*inline 'AGGREGATE_TYPE_DEF' ~}}
 {{define 'AGGREGATE_TYPE' AGGREGATE.aggregation_type ~}}
-{{define 'type_name' (upper-camel (concat PREFIX ' ' AGGREGATE.name)) ~}}
+{{define 'type_name' (concat PREFIX (upper-camel AGGREGATE.name)) ~}}
 {{define 'entry_type_name' (concat type_name 'Entry') ~}}
 {{#if (eq AGGREGATE_TYPE 'date_range') ~}}
 type {{type_name}} {
@@ -34,7 +38,17 @@ type {{type_name}} {
     {{lower-camel filter.key}}: {{entry_type_name}}
     {{/each}}
 }
-{{/if}}
+{{else if (and
+  (eq AGGREGATE_TYPE 'filter')
+  AGGREGATE.sub_aggregates
+) ~}}
+type {{type_name}} {
+    docCount: Int!
+    {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+    {{> AGGREGATE_PROPERTY_DEF PREFIX=entry_type_name AGGREGATE=sub_aggregate }}
+    {{/each}}
+}
+{{~/if}}
 {{#if (or
   (eq AGGREGATE_TYPE 'date_range')
   (eq AGGREGATE_TYPE 'filters')

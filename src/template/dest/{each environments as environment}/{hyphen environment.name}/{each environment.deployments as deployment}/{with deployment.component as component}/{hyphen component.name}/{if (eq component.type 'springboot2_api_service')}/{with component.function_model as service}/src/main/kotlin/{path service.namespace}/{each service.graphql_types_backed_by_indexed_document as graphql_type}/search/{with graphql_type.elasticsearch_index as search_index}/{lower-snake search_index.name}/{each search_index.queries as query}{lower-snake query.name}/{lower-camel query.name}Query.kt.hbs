@@ -227,7 +227,7 @@ fun {{query_name}}Query(
         {{#if (eq interval.type 'calendar') ~}}
         .calendarInterval(
             {{#if interval.variable_unit ~}}
-            when ("{{interval_unit}}") {
+            when ("{{interval.unit}}") {
                 "minute" -> DateHistogramInterval.MINUTE
                 "hour" -> DateHistogramInterval.HOUR
                 "day" -> DateHistogramInterval.DAY
@@ -235,7 +235,7 @@ fun {{query_name}}Query(
                 "month" -> DateHistogramInterval.MONTH
                 "quarter" -> DateHistogramInterval.QUARTER
                 "year" -> DateHistogramInterval.YEAR
-                else throw new IllegalArgumentException("Unknown time unit: {{interval_unit}}" )
+                else -> throw IllegalArgumentException("Unknown time unit: {{interval.unit}}")
             }
             {{else ~}}
             DateHistogramInterval.{{upper-snake interval.unit}}
@@ -248,13 +248,13 @@ fun {{query_name}}Query(
         )) ~}}
         .fixedInterval(
             {{#if interval.variable_unit ~}}
-            when ("{{interval_unit}}") {
+            when ("{{interval.unit}}") {
                 "millisecond" -> DateHistogramInterval.milliseconds({{interval_value}})
                 "second" -> DateHistogramInterval.seconds({{interval_value}})
                 "minute" -> DateHistogramInterval.minutes({{interval_value}})
                 "hour" -> DateHistogramInterval.hours({{interval_value}})
                 "day" -> DateHistogramInterval.days({{interval_value}})
-                else throw new IllegalArgumentException("Unknown time unit: {{interval_unit}}")
+                else throw new IllegalArgumentException("Unknown time unit: {{interval.unit}}")
             }
             {{else ~}}
             DateHistogramInterval.{{lower-camel (plural interval.unit)}}({{interval_value}})
@@ -319,14 +319,15 @@ fun {{query_name}}Query(
             {{#*inline 'RETRIEVE_DATA_FROM_AGGREGATE'}}
             {{define 'aggregate_type' AGGREGATE.aggregation_type ~}}
             {{define 'aggregate_name' AGGREGATE.name ~}}
+            {{define 'aggregate_java_type' (case
+              (eq aggregate_type 'date_range') 'ParsedDateRange'
+              (eq aggregate_type 'count') 'ValueCount'
+              (upper-camel aggregate_type)
+            ) ~}}
             if (aggregate.name == "{{aggregate_name}}") {
                 {{#if (or
                   (eq aggregate_type 'date_range')
                   (eq aggregate_type 'filters')
-                ) ~}}
-                {{define 'aggregate_java_type' (case
-                  (eq aggregate_type 'date_range') 'ParsedDateRange'
-                  (upper-camel aggregate_type)
                 ) ~}}
                 this.{{lower-camel aggregate_name}} = {{upper-camel aggregate_name}}().apply {
                     (aggregate as {{aggregate_java_type}}).buckets.map { bucket ->
@@ -378,7 +379,20 @@ fun {{query_name}}Query(
                     }
                 }
                 {{else if (eq aggregate_type 'filter') ~}}
+                {{~#if AGGREGATE.sub_aggregates ~}}
+                this.{{lower-camel aggregate_name}} = {{upper-camel aggregate_name}}().apply {
+                    this.docCount = (aggregate as Filter).docCount
+                    aggregate.aggregations.forEach{aggregate ->
+                        {{#each AGGREGATE.sub_aggregates as |sub_aggregate| ~}}
+                        {{#shift width=12}}
+                        {{> RETRIEVE_DATA_FROM_AGGREGATE AGGREGATE=sub_aggregate }}
+                        {{/shift}}
+                        {{/each}}
+                    }
+                }
+                {{~else~}}
                 this.{{lower-camel aggregate_name}} = (aggregate as Filter).docCount
+                {{~/if~}}
                 {{else if (eq aggregate_type 'bucket_script') ~}}
                 val value = (aggregate as? SimpleValue)?.value() ?: 0.0
                 this.{{lower-camel aggregate_name}} = if (value.isNaN()) 0.0 else value
@@ -388,7 +402,7 @@ fun {{query_name}}Query(
                 ) ~}}
                 // NOP ({{lower-camel aggregate_name}})
                 {{else ~}}
-                val value = (aggregate as? {{upper-camel aggregate_type}})?.value() ?: 0.0
+                val value = (aggregate as? {{upper-camel aggregate_java_type}})?.value() ?: 0.0
                 this.{{lower-camel aggregate_name}} = if (value.isNaN()) 0.0 else value
                 {{/if}}
             }
