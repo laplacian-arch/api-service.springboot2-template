@@ -1,5 +1,8 @@
 {{define "base_package" (concat service.namespace '.rpc.rest') ~}}
 {{define "package" (concat base_package '.' (lower-snake rest_resource.name)) ~}}
+{{define "depends_on_cache" (any rest_resource.operations '@it.enable_cache') ~}}
+{{define "base_class_name" (upper-camel rest_resource.name) ~}}
+{{define "class_name" (concat base_class_name 'RestResourceClient') ~}}
 package {{package}}
 
 import org.springframework.stereotype.Component
@@ -10,10 +13,20 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.HttpMethod
+{{#if depends_on_cache ~}}
+import org.springframework.cache.CacheManager
+{{~/if}}
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import java.nio.charset.Charset
 import com.fasterxml.jackson.module.kotlin.*
+{{#if depends_on_cache ~}}
+import reactor.cache.CacheMono
+import reactor.core.publisher.Mono
+import reactor.core.publisher.Signal
+{{~/if}}
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 import {{base_package}}.RestResourceClientBase
 {{#each rest_resource.operations as |operation| ~}}
@@ -21,20 +34,50 @@ import {{package}}.{{lower-snake operation.name}}.*
 {{/each}}
 
 @Component
-class {{upper-camel rest_resource.name}}RestResourceClient(
+class {{class_name}}(
     {{#each rest_resource.configurations as |config| ~}}
     @Value("{{concat '\${' config.definition.key '}'}}")
     private val {{config.variable_name}}: {{upper-camel config.definition.type}},
     {{/each}}
+    {{#if depends_on_cache ~}}
+    private val cacheManager: CacheManager,
+    {{~/if}}
 ): RestResourceClientBase(), {{upper-camel rest_resource.name}}RestResource {
     {{#each rest_resource.operations as |operation| ~}}
-
+    {{define 'operation_name' (lower-camel operation.name) ~}}
+    {{define 'operation_class_base_name' (upper-camel operation.name) ~}}
+    {{define 'input_class_name' (concat operation_class_base_name 'Input') ~}}
+    {{define 'response_class_name' (concat operation_class_base_name 'Response') ~}}
     /**
      * {{trim operation.description}}
      */
-    override fun {{lower-camel operation.name}}(
-        input: {{upper-camel operation.name}}Input
-    ): CompletableFuture<{{upper-camel operation.name}}Response> {
+    override fun {{operation_name}}(
+        input: {{input_class_name}}
+    {{#if (not operation.enable_cache) ~}}
+    ): CompletableFuture<{{response_class_name}}> {
+    {{~else~}}
+    {{define 'cache_name' (lower-snake (concat rest_resource.name '_' operation.name)) ~}}
+    ): CompletableFuture<{{response_class_name}}> = CacheMono
+        .lookup<{{input_class_name}}, {{response_class_name}}>({ key ->
+            Mono.justOrEmpty(
+                cacheManager.getCache("{{cache_name}}")?.get(key)?.get() as? {{response_class_name}}
+            )
+            .map{ value -> Signal.next(value) }
+        }, input)
+        .onCacheMissResume({{operation_name}}NoCache(input))
+        .andWriteWith { key, value ->
+            Mono.fromRunnable{
+                cacheManager.getCache("{{cache_name}}")?.put(key, value.get())
+            }
+        }
+        {{#if operation.enable_cache ~}}
+        .toFuture()
+        {{~/if}}
+
+    private fun {{operation_name}}NoCache(
+        input: {{input_class_name}}
+    ): Mono<{{response_class_name}}> {
+    {{~/if}}
         {{#each operation.arguments as |argument| ~}}
         val {{lower-camel argument.name}} = input.{{lower-camel argument.name}}
         {{/each}}
@@ -57,12 +100,18 @@ class {{upper-camel rest_resource.name}}RestResourceClient(
         {{/each}}
         .retrieve()
         .bodyToMono({{upper-camel operation.name}}Response::class.java)
+        {{#if (not operation.enable_cache) ~}}
         .toFuture()
+        {{~/if}}
     }
     {{/each}}
     val commonRequestSettings = {req: WebClient.RequestBodySpec ->
         req
         .accept(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)
         .acceptCharset(Charset.forName("UTF-8"))
+    }
+
+    companion object {
+        private val LOG: Logger = LoggerFactory.getLogger({{class_name}}::class.java)
     }
 }

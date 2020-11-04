@@ -4,6 +4,9 @@ package {{service.namespace}}
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.ComponentScan
+{{#if service.depends_on_cache ~}}
+import org.springframework.cache.annotation.EnableCaching
+{{/if}}
 
 /**
  * The launcher class for the {{service.name}} service.
@@ -17,6 +20,9 @@ import org.springframework.context.annotation.ComponentScan
     "{{namespace}}"{{#unless @last}},{{/unless}}
     {{/each}}
 ])
+{{#if service.depends_on_cache ~}}
+@EnableCaching
+{{~/if}}
 class {{class_name}}
 
 /**

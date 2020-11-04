@@ -23,6 +23,10 @@ dependencies {
   {{#if service.depends_on_elasticsearch ~}}
   implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
   {{/if}}
+  {{#if service.depends_on_cache ~}}
+  implementation 'org.springframework.boot:spring-boot-starter-cache'
+  implementation 'io.projectreactor.addons:reactor-extra:3.3.4.RELEASE'
+  {{/if}}
   implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
   implementation "com.graphql-java:graphql-java-spring-boot-starter-webflux:$graphqlJavaWebfluxVersion"
   implementation "com.graphql-java:graphql-java-extended-scalars:$graphqlExtendedScalarVersion"
