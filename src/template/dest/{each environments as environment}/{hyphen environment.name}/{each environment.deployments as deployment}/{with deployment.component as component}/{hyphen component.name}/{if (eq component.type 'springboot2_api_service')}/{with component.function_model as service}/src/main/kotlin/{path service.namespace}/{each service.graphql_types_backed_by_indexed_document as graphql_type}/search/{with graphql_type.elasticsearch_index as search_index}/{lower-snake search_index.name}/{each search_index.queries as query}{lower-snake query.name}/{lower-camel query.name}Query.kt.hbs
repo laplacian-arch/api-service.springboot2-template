@@ -191,15 +191,23 @@ fun {{query_name}}Query(
                 {{#each AGGREGATE.sorts as |sort| ~}}
                 FieldSortBuilder({{dquote sort.field}})
                 {{#if sort.order ~}}
-                    {{#if sort.variable_order ~}}
+                    {{~#if sort.variable_order ~}}
                     .order(if ({{dquote sort.order}} == "asc") SortOrder.ASC else SortOrder.DESC),
-                    {{else ~}}
+                    {{~else~}}
                     .order(SortOrder.{{upper-snake sort.order}}),
-                    {{/if}}
-                {{/if}}
+                    {{~/if~}}
+                {{~/if~}}
                 {{/each}}
             )
         )
+        {{~#if AGGREGATE.from ~}}
+        {{~define 'from' (if AGGREGATE.variable_from (concat (dquote AGGREGATE.from) '.toInt()') AGGREGATE.from) ~}}
+        .from({{from}})
+        {{~/if~}}
+        {{#if AGGREGATE.bucket_size ~}}
+        {{~define 'bucket_size' (if AGGREGATE.variable_bucket_size (concat (dquote AGGREGATE.bucket_size) '.toInt()') AGGREGATE.bucket_size) ~}}
+        .size({{bucket_size}})
+        {{~/if}}
         {{/if}}
         {{else if (eq aggregate_type 'date_range') ~}}
         .dateRange("{{AGGREGATE.name}}")
@@ -395,7 +403,7 @@ fun {{query_name}}Query(
                 {{~/if~}}
                 {{else if (eq aggregate_type 'bucket_script') ~}}
                 val value = (aggregate as? SimpleValue)?.value() ?: 0.0
-                this.{{lower-camel aggregate_name}} = if (value.isNaN()) 0.0 else value
+                this.{{lower-camel aggregate_name}} = if ((value.isNaN() || value.isInfinite())) 0.0 else value
                 {{else if (or
                   (eq aggregate_type 'bucket_selector')
                   (eq aggregate_type 'bucket_sort')
@@ -403,7 +411,7 @@ fun {{query_name}}Query(
                 // NOP ({{lower-camel aggregate_name}})
                 {{else ~}}
                 val value = (aggregate as? {{upper-camel aggregate_java_type}})?.value() ?: 0.0
-                this.{{lower-camel aggregate_name}} = if (value.isNaN()) 0.0 else value
+                this.{{lower-camel aggregate_name}} = if ((value.isNaN() || value.isInfinite())) 0.0 else value
                 {{/if}}
             }
             {{/inline}}
