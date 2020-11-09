@@ -12,8 +12,6 @@
 {{prefix}}.pool.max-idle-time=1m
 {{prefix}}.pool.validation-query=SELECT 1
 {{/each}}
-{{#each service.configuration_categories as |category| ~}}
-{{#each category.configurations as |config| ~}}
+{{#each service_configurations as |config| ~}}
 {{config.key}}={{config.default_value}}
-{{/each}}
 {{/each}}

@@ -24,8 +24,6 @@ java \
   {{env_prefix}}_USER:+ --{{prop_prefix}}.username=}{{env_prefix}}_USER} \
   {{env_prefix}}_PASS:+ --{{prop_prefix}}.password=}{{env_prefix}}_PASS} \
   {{/each}}
-  {{#each service.configuration_categories as |category| ~}}
-  {{#each category.configurations as |config| ~}}
+  {{#each service_configurations as |config| ~}}
   {{printf '${%s:+ --%s=}${%s}' config.environment_variable_name config.key config.environment_variable_name}} \
-  {{/each}}
   {{/each}}
