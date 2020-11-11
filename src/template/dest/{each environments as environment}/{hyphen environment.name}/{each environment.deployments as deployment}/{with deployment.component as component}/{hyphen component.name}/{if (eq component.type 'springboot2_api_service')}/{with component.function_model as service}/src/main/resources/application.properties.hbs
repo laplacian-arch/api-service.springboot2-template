@@ -1,3 +1,6 @@
+{{#each service.datasources ~}}
+management.health.datasource.enabled=false
+{{~/each}}
 {{#each service.datasources as |datasource| ~}}
 {{define "prefix" (concat
   'spring'
@@ -11,7 +14,10 @@
 {{prefix}}.pool.max-size=10
 {{prefix}}.pool.max-idle-time=1m
 {{prefix}}.pool.validation-query=SELECT 1
-{{/each}}
+{{~/each}}
+{{#if service.depends_on_elasticsearch ~}}
+management.health.elasticsearch.enabled=false
+{{~/if}}
 {{#each service_configurations as |config| ~}}
 {{config.key}}={{config.default_value}}
 {{/each}}
