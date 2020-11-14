@@ -2,8 +2,12 @@
 package {{package}}
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.*
+import java.io.Serializable
 {{#*inline 'MODEL_CLASS'}}
-class {{CLASS_NAME}} {
+class {{CLASS_NAME}}: Serializable {
+    companion object {
+      private const val serialVersionUID: Long = 1
+    }
     {{#each MODEL.stored_properties as |property| ~}}
     {{define 'prop_type' (printf (if property.multiple "List<%s>" "%s") (case
       (eq property.type 'number') 'Int'

@@ -25,7 +25,11 @@ dependencies {
   {{/if}}
   {{#if service.depends_on_cache ~}}
   implementation 'org.springframework.boot:spring-boot-starter-cache'
+  {{#if service.depends_on_redis_cache ~}}
+  implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+  {{/if}}
   implementation 'io.projectreactor.addons:reactor-extra:3.3.4.RELEASE'
+  implementation 'com.github.ben-manes.caffeine:caffeine'
   {{/if}}
   implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
   implementation "com.graphql-java:graphql-java-spring-boot-starter-webflux:$graphqlJavaWebfluxVersion"
