@@ -31,11 +31,14 @@
                 {{#if PREDICATE.to}}
                 .to({{dquote PREDICATE.to}}.replace("now||", "now"))
                 {{/if}}
-                {{#if (neq PREDICATE.includeLower null)}}
-                .includeLower({{PREDICATE.includeLower}})
+                {{#if (neq PREDICATE.include_lower null)}}
+                .includeLower({{PREDICATE.include_lower}})
                 {{/if}}
-                {{#if (neq PREDICATE.includeUpper null)}}
-                .includeUpper({{PREDICATE.includeUpper}})
+                {{#if (neq PREDICATE.include_upper null)}}
+                .includeUpper({{PREDICATE.include_upper}})
+                {{/if}}
+                {{#if PREDICATE.timezone ~}}
+                .timeZone("{{PREDICATE.timezone}}")
                 {{/if}}
             {{/if}}
             {{/define}}
