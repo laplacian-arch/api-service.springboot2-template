@@ -10,6 +10,7 @@
                 (eq predicate_type 'term')
                 (eq predicate_type 'terms')
                 (eq predicate_type 'range')
+                (eq predicate_type 'query_string')
             ) ~}}
             {{#define 'predicate_body' ~}}
             {{#if (eq predicate_type 'match') ~}}
@@ -39,6 +40,72 @@
                 {{/if}}
                 {{#if PREDICATE.timezone ~}}
                 .timeZone("{{PREDICATE.timezone}}")
+                {{/if}}
+            {{else if (eq predicate_type 'query_string') ~}}
+            QueryBuilders
+                .queryStringQuery({{dquote PREDICATE.query}})
+                {{#if (not-null PREDICATE.default_field) ~}}
+                .defaultField({{dquote PREDICATE.default_field}})
+                {{/if}}
+                {{#if (not-null PREDICATE.allow_leading_wildcard) ~}}
+                .allowLeadingWildcard({{PREDICATE.allow_leading_wildcard}})
+                {{/if}}
+                {{#if (not-null PREDICATE.analyze_wildcard) ~}}
+                .analyzeWildcard({{PREDICATE.analyze_wildcard}})
+                {{/if}}
+                {{#if (not-null PREDICATE.analyzer) ~}}
+                .analyzer({{dquote PREDICATE.analyzer}})
+                {{/if}}
+                {{#if (not-null PREDICATE.auto_generate_synonyms_phrase_query) ~}}
+                .autoGenerateSynonymsPhraseQuery({{PREDICATE.auto_generate_synonyms_phrase_query}})
+                {{/if}}
+                {{#if (not-null PREDICATE.boost) ~}}
+                .boost({{PREDICATE.boost}})
+                {{/if}}
+                {{#if (not-null PREDICATE.default_operator) ~}}
+                .defaultOperator({{dquote PREDICATE.default_operator}})
+                {{/if}}
+                {{#if (not-null PREDICATE.enable_position_increments) ~}}
+                .enablePositionIncrements({{PREDICATE.enable_position_increments}})
+                {{/if}}
+                {{#each PREDICATE.fields as |field| ~}}
+                .field({{dquote field}})
+                {{/each}}
+                {{#if (not-null PREDICATE.fuzziness) ~}}
+                .fuzziness(Fuzziness.{{PREDICATE.fuzziness}})
+                {{/if}}
+                {{#if (not-null PREDICATE.fuzzy_max_expansion) ~}}
+                .fuzzyMaxExpansion({{PREDICATE.fuzzy_max_expansion}})
+                {{/if}}
+                {{#if (not-null PREDICATE.fuzzy_prefix_length) ~}}
+                .fuzzyPrefixLength({{PREDICATE.fuzzy_prefix_length}})
+                {{/if}}
+                {{#if (not-null PREDICATE.fuzzy_transpositions) ~}}
+                .fuzzyTranspositions({{PREDICATE.fuzzy_transpositions}})
+                {{/if}}
+                {{#if (not-null PREDICATE.lenient) ~}}
+                .lenient({{PREDICATE.lenient}})
+                {{/if}}
+                {{#if (not-null PREDICATE.max_determinized_states) ~}}
+                .maxDeterminizedStates({{PREDICATE.max_determinized_states}})
+                {{/if}}
+                {{#if (not-null PREDICATE.minimum_should_match) ~}}
+                .minimumShouldMatch({{dquote PREDICATE.minimum_should_match}})
+                {{/if}}
+                {{#if (not-null PREDICATE.quote_analyzer) ~}}
+                .quoteAnalyzer({{PREDICATE.quote_analyzer}})
+                {{/if}}
+                {{#if (not-null PREDICATE.phrase_slop) ~}}
+                .phraseSlop({{PREDICATE.phrase_slop}})
+                {{/if}}
+                {{#if (not-null PREDICATE.quote_field_suffix) ~}}
+                .quoteFieldSuffix({{dquote PREDICATE.quote_field_suffix}})
+                {{/if}}
+                {{#if (not-null PREDICATE.rewrite) ~}}
+                .rewrite({{dquote PREDICATE.rewrite}})
+                {{/if}}
+                {{#if (not-null PREDICATE.time_zone) ~}}
+                .timeZone({{dquote PREDICATE.time_zone}})
                 {{/if}}
             {{/if}}
             {{/define}}
@@ -95,6 +162,7 @@ import org.elasticsearch.search.aggregations.bucket.range.ParsedDateRange
 import org.elasticsearch.search.aggregations.bucket.histogram.*
 import org.elasticsearch.search.aggregations.pipeline.SimpleValue
 import org.elasticsearch.script.Script
+import org.elasticsearch.common.unit.*
 
 import com.fasterxml.jackson.module.kotlin.*
 import java.util.concurrent.CompletableFuture
