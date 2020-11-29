@@ -24,8 +24,11 @@ java \
   {{env_prefix}}_USER:+ --{{prop_prefix}}.username=}{{env_prefix}}_USER} \
   {{env_prefix}}_PASS:+ --{{prop_prefix}}.password=}{{env_prefix}}_PASS} \
   {{/each}}
-  {{#each service.configuration_categories as |category| ~}}
-  {{#each category.configurations as |config| ~}}
+  {{#if service.depends_on_redis_cache ~}}
+  {{printf '${%s:+ --%s=}${%s}' 'REDIS_AUTH_KEY' 'spring.redis.password' 'REDIS_AUTH_KEY'}} \
+  {{printf '${%s:+ --%s=}${%s}' 'REDIS_HOST' 'spring.redis.host' 'REDIS_HOST'}} \
+  {{printf '${%s:+ --%s=}${%s}' 'REDIS_PORT' 'spring.redis.port' 'REDIS_PORT'}} \
+  {{~/if}}
+  {{#each service_configurations as |config| ~}}
   {{printf '${%s:+ --%s=}${%s}' config.environment_variable_name config.key config.environment_variable_name}} \
-  {{/each}}
   {{/each}}

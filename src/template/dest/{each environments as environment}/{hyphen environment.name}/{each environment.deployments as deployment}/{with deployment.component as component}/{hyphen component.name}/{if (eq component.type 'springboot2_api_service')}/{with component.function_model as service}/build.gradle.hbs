@@ -25,7 +25,11 @@ dependencies {
   {{/if}}
   {{#if service.depends_on_cache ~}}
   implementation 'org.springframework.boot:spring-boot-starter-cache'
+  {{#if service.depends_on_redis_cache ~}}
+  implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+  {{/if}}
   implementation 'io.projectreactor.addons:reactor-extra:3.3.4.RELEASE'
+  implementation 'com.github.ben-manes.caffeine:caffeine'
   {{/if}}
   implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
   implementation "com.graphql-java:graphql-java-spring-boot-starter-webflux:$graphqlJavaWebfluxVersion"
@@ -33,12 +37,21 @@ dependencies {
   {{#if service.graphql_types_backed_by_database_table ~}}
   runtimeOnly "io.r2dbc:r2dbc-postgresql:$r2dbcPostgresVersion"
   {{/if}}
+  {{#each component.additional_libraries as |library| ~}}
+  implementation "{{library.gradle_dependency_entry}}"
+  {{/each}}
   testImplementation 'org.jetbrains.kotlin:kotlin-test'
   testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
 }
 
 repositories {
+  {{#if component.repositories ~}}
+  {{#each component.repositories as |repository| ~}}
+  {{repository}}
+  {{/each}}
+  {{else ~}}
   jcenter()
+  {{/if}}
 }
 
 bootRun {
