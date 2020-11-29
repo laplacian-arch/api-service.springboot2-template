@@ -1,0 +1,18 @@
+{{define 'class_name' (concat
+  (upper-camel graphql_type.name 'Mapper'
+) ~}}
+{{define 'namespace' (concat
+  service.name '.mybatis.' (lower_snake graphql_type.name)
+) ~}}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namspace="{{namespace}}.{{class_name}}">
+  {{#each graphql_type.mybatis_mappers as |mapper| ~}}
+  <{{mapper.type id="{{lower-camel mapper.id}}" resultType="" }}>
+  {{mapper.statement}}
+  </{{mapper.type}}>
+  {{/each}}
+</mapper>

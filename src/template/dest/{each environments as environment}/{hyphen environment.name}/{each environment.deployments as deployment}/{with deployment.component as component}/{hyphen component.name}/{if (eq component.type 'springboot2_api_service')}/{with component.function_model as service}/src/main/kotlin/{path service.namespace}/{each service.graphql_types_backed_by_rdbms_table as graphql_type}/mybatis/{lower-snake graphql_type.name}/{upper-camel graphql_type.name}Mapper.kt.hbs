@@ -1,0 +1,15 @@
+{{define 'class_name' (concat
+  (upper-camel graphql_type.name 'Mapper'
+) ~}}
+{{define 'namespace' (concat
+  service.name '.mybatis.' (lower_snake graphql_type.name)
+) ~}}
+package {{namespace}}
+
+import org.apache.ibatis.annotations.Mapper
+
+interface {{class_name}} {
+    {{#each graphql_type.mybatis_mappers as |mapper| ~}}
+    fun {{lower-camel mapper.id}}()
+    {{/each}}
+}
