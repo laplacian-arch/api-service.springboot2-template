@@ -340,26 +340,29 @@ fun {{query_name}}Query(
             {{/if}}
         )
         {{/if}}
-        {{#if AGGREGATE.variable_max_results ~}}
-        .also{ aggregate -> {{AGGREGATE.variable_max_results}}?.let{ aggregate.size(it) }}
-        {{else if AGGREGATE.max_results ~}}
-        .size({{AGGREGATE.max_results}})
-        {{/if}}
-        {{#if AGGREGATE.variable_shard_size ~}}
-        .also{ aggregate -> {{AGGREGATE.variable_shard_size}}?.let{ aggregate.shardSize(it) }}
-        {{else if AGGREGATE.max_results ~}}
-        .shardSize({{AGGREGATE.shard_size}})
-        {{/if}}
-        {{#if AGGREGATE.variable_order ~}}
-        .also{ aggregate -> {{AGGREGATE.variable_order}}?.let{ aggregate.order(BuckerOrder.count(it == "asc")) }}
-        {{else if AGGREGATE.max_results ~}}
-        .order(BucketOrder.count({{if (eq AGGREGATE.sortByCount 'asc') 'true' 'false'}}))
-        {{/if}}
         {{#if AGGREGATE.format ~}}
         .format("{{AGGREGATE.format}}")
         {{/if}}
         {{#if AGGREGATE.timezone ~}}
         .timeZone(ZoneOffset.of("{{AGGREGATE.timezone}}"))
+        {{/if}}
+        {{else if (eq aggregate_type 'terms')}}
+        .terms("{{AGGREGATE.name}}")
+        .field("{{AGGREGATE.field}}")
+        {{#if AGGREGATE.variable_max_buckets ~}}
+        .also{ aggregate -> "{{AGGREGATE.max_buckets}}".let{ aggregate.size(it.toInt()) }}
+        {{else if AGGREGATE.max_buckets ~}}
+        .size({{AGGREGATE.max_buckets}})
+        {{/if}}
+        {{#if AGGREGATE.variable_shard_size ~}}
+        .also{ aggregate -> "{{AGGREGATE.shard_size}}".let{ aggregate.shardSize(it.toInt()) }}
+        {{else if AGGREGATE.shard_size ~}}
+        .shardSize({{AGGREGATE.shard_size}})
+        {{/if}}
+        {{#if AGGREGATE.variable_order ~}}
+        .also{ aggregate -> "{{AGGREGATE.sort_by_count}}".let{ aggregate.order(BuckerOrder.count(it == "asc")) }}
+        {{else if AGGREGATE.sort_by_count ~}}
+        .order(BucketOrder.count({{if (eq AGGREGATE.sortByCount 'asc') 'true' 'false'}}))
         {{/if}}
         {{else ~}}
         .{{lower-camel aggregate_type}}("{{AGGREGATE.name}}")
@@ -389,7 +392,7 @@ fun {{query_name}}Query(
     .collectList()
     .toFuture()
     {{else ~}}
-    .aggregate(query.build()/*.apply{ maxResults = 0 }*/,
+    .aggregate(query.build(),
         {{response_data_class}}::class.java,
         IndexCoordinates.of("{{search_index.name}}"),
     )
