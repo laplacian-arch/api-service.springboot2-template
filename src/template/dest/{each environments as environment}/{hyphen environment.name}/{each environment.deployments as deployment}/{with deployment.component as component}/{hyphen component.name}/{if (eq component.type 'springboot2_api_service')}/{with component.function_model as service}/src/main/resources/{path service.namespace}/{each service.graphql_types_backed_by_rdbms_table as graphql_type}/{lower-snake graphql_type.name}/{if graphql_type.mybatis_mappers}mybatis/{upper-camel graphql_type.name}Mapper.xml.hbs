@@ -1,8 +1,8 @@
 {{define 'class_name' (concat
-  (upper-camel graphql_type.name 'Mapper'
+  (upper-camel graphql_type.name 'Mapper')
 ) ~}}
 {{define 'namespace' (concat
-  service.name '.mybatis.' (lower_snake graphql_type.name)
+  service.name '.mybatis.' (lower-snake graphql_type.name)
 ) ~}}
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper
@@ -11,7 +11,7 @@
 
 <mapper namspace="{{namespace}}.{{class_name}}">
   {{#each graphql_type.mybatis_mappers as |mapper| ~}}
-  <{{mapper.type id="{{lower-camel mapper.id}}" resultType="" }}>
+  <{{mapper.type}} id="{{lower-camel mapper.id}}" resultType="">
   {{mapper.statement}}
   </{{mapper.type}}>
   {{/each}}

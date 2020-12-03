@@ -28,6 +28,9 @@ dependencies {
   {{#if service.depends_on_redis_cache ~}}
   implementation 'org.springframework.boot:spring-boot-starter-data-redis'
   {{/if}}
+  {{#if service.depends_on_mybatis ~}}
+  implementation "org.mybatis.spring.boot:mybatis-spring-boot-starter:$springbootMybatisVersion"
+  {{/if}}
   implementation 'io.projectreactor.addons:reactor-extra:3.3.4.RELEASE'
   implementation 'com.github.ben-manes.caffeine:caffeine'
   {{/if}}

@@ -6,3 +6,6 @@ kotlinxCoroutineVersion={{component.kotlin_coroutine_version}}
 r2dbcPostgresVersion={{component.r2dbc_postgres_driver_version}}
 graphqlJavaWebfluxVersion={{component.springboot_graphql_webflux_version}}
 graphqlExtendedScalarVersion={{component.graphql_extended_scalar_version}}
+{{#if service.depends_on_mybatis ~}}
+springbootMybatisVersion={{component.springboot_mybatis_version}}
+{{/if}}
