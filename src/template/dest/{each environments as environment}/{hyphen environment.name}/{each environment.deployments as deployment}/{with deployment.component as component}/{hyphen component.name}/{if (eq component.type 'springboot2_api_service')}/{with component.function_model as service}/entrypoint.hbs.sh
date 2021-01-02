@@ -4,25 +4,28 @@ set -e
 set -x
 
 java \
-  {{#if is_debug ~}}
+  {{#if component.enable_debug ~}}
   -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5060 \
+  {{/if}}
+  {{#if component.enable_jmx ~}}
+  -Djava.rmi.server.hostname=0.0.0.0 \
+  -Dcom.sun.management.jmxremote.rmi.port=9010 \
+  -Dcom.sun.management.jmxremote.ssl=false \
+  -Dcom.sun.management.jmxremote.local.only=false \
+  -Dcom.sun.management.jmxremote.authenticate=false \
+  -Dcom.sun.management.jmxremote \
+  -Dcom.sun.management.jmxremote.port=9010 \
   {{/if}}
   -Djava.security.egd=file:/dev/./urandom \
   ${IMAGE_VERSION:+ -Dimage.version=}${IMAGE_VERSION} \
   -jar /app/api.jar \
   {{#each service.datasources as |datasource| ~}}
-  {{define "env_prefix"  (concat
-    '${DATASOURCE'
-    (if (eq datasource.name 'default') '' (concat '_' (upper-snake datasource.name)))
-  ) ~}}
-  {{define "prop_prefix" (concat
-    'spring'
-    (if (eq datasource.name 'default') '' (concat '.' (lower-snake datasource.name)))
-    '.r2dbc'
-  ) ~}}
-  {{env_prefix}}_URL:+ --{{prop_prefix}}.url=}{{env_prefix}}_URL} \
-  {{env_prefix}}_USER:+ --{{prop_prefix}}.username=}{{env_prefix}}_USER} \
-  {{env_prefix}}_PASS:+ --{{prop_prefix}}.password=}{{env_prefix}}_PASS} \
+  {{#if (eq datasource.type 'oracle_jdbc') ~}}
+  {{define 'prefix' (concat 'datasource.' (hyphen datasource.name) '.') ~}}
+  {{printf '${%s:+ --%s=}${%s}' (upper-snake (concat prefix 'username')) (concat prefix 'username') (upper-snake (concat prefix 'username'))}} \
+  {{printf '${%s:+ --%s=}${%s}' (upper-snake (concat prefix 'password')) (concat prefix 'password') (upper-snake (concat prefix 'password'))}} \
+  {{printf '${%s:+ --%s=}${%s}' (upper-snake (concat prefix 'jdbc-url')) (concat prefix 'jdbc-url') (upper-snake (concat prefix 'jdbc-url'))}} \
+  {{/if}}
   {{/each}}
   {{#if service.depends_on_redis_cache ~}}
   {{printf '${%s:+ --%s=}${%s}' 'REDIS_AUTH_KEY' 'spring.redis.password' 'REDIS_AUTH_KEY'}} \

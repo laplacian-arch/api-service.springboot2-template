@@ -8,4 +8,7 @@ graphqlJavaWebfluxVersion={{component.springboot_graphql_webflux_version}}
 graphqlExtendedScalarVersion={{component.graphql_extended_scalar_version}}
 {{#if service.depends_on_mybatis ~}}
 springbootMybatisVersion={{component.springboot_mybatis_version}}
-{{/if}}
+{{~/if}}
+{{#if service.depends_on_oracle_jdbc_driver ~}}
+oracleDriverVersion={{component.oracle_jdbc_driver_version}}
+{{~/if}}

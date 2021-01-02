@@ -1,0 +1,8 @@
+{{define 'class_name' (concat (upper-camel data_model.name) 'Record') ~}}
+package {{service.namespace}}.db.{{lower-snake data_model.name}}
+
+data class {{class_name}}(
+    {{#each data_model.stored_properties as |property| ~}}
+    val {{lower-camel property.name}}: {{property.class_name}}{{if property.nullable '?'}},
+    {{/each}}
+)

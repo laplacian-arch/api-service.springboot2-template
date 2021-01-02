@@ -1,7 +1,16 @@
-{{#each service.datasources ~}}
+{{#if service.datasources ~}}
 management.health.datasource.enabled=false
-{{~/each}}
+{{/if}}
 {{#each service.datasources as |datasource| ~}}
+{{define 'prefix' (concat 'datasource.' (hyphen datasource.name)) ~}}
+{{#if (eq datasource.type 'oracle_jdbc') ~}}
+{{prefix}}.username={{datasource.username}}
+{{prefix}}.password={{datasource.password}}
+{{prefix}}.driver-class-name={{datasource.driver-class-name}}
+{{prefix}}.jdbc-url={{line-continuation datasource.url}}
+{{/if}}
+{{/each}}
+{{#each null ~}}
 {{define "prefix" (concat
   'spring'
   (if (eq datasource.name 'default') '' (concat '.' (lower-snake datasource.name)))

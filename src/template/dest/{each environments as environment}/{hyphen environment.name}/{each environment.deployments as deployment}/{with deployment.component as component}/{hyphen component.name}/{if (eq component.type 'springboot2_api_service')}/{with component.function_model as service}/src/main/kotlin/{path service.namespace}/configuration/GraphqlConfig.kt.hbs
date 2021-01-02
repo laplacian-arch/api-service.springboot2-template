@@ -32,33 +32,38 @@ import {{entity_package}}.{{aggregate.reference_entity.class_name}}Resolver
 {{/if}}
 {{/each}}
 {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
-{{define "index_name" graphql_type.elasticsearch_index.name ~}}
-import {{service.namespace}}.search.{{lower-snake index_name}}.*
+import {{service.namespace}}.search.{{lower-snake graphql_type.name}}.*
 {{/each}}
 {{#each service.graphql_types_backed_by_external_rest_resource as |graphql_type| ~}}
-{{define "rest_resource_name" graphql_type.rest_resource.name ~}}
-import {{service.namespace}}.rpc.rest.{{lower-snake rest_resource_name}}.*
+import {{service.namespace}}.rpc.rest.{{lower-snake graphql_type.name}}.*
+{{/each}}
+{{#each service.graphql_types_backed_by_rdbms_table as |graphql_type| ~}}
+import {{service.namespace}}.db.{{lower-snake graphql_type.data_model.name}}.*
 {{/each}}
 
 @Configuration
 class GraphqlConfig(
     @Value("\${graphql.blocked-fields-patterns:}")
     private val blockedFieldsPatterns: String,
-    @Value("\${graphql.ignored-fields-patterns:}")
-    private val ignoredFieldsPatterns: String,
 ) {
     @Bean
     fun graphql(
         schema: GraphQLSchema,
         exceptionHandler: DataFetcherExceptionHandler,
+        fieldFilteringInstrument: GraphqlFieldFilteringInstrument,
     ): GraphQL = GraphQL
         .newGraphQL(schema)
         .queryExecutionStrategy(AsyncExecutionStrategy(exceptionHandler))
-        .instrumentation(GraphqlFieldFilteringInstrument(ignoredFieldsPatterns))
+        .instrumentation(fieldFilteringInstrument)
         .build()
 
     @Bean
     fun exceptionHandler(): DataFetcherExceptionHandler = GraphqlExceptionHandler()
+
+    @Bean
+    fun fieldFilteringInstrument(
+        fieldFilteringRules: List<GraphqlFieldFilteringRule<*>>
+    ): GraphqlFieldFilteringInstrument = GraphqlFieldFilteringInstrument(fieldFilteringRules)
 
     @Bean
     fun blockedFields(): GraphqlFieldVisibility = blockedFieldsPatterns
@@ -100,6 +105,9 @@ class GraphqlConfig(
         {{define "rest_resource_name" graphql_type.rest_resource.name ~}}
         {{lower-camel rest_resource_name}}Resolver: {{upper-camel rest_resource_name}}Resolver,
         {{/each}}
+        {{#each service.graphql_types_backed_by_rdbms_table as |graphql_type| ~}}
+        {{lower-camel graphql_type.name}}Resolver: {{upper-camel graphql_type.name}}Resolver,
+        {{/each}}
         fieldVisibility: GraphqlFieldVisibility,
     ): RuntimeWiring = RuntimeWiring.newRuntimeWiring()
     .scalar(ExtendedScalars.newRegexScalar("DateTime").addPattern(
@@ -122,6 +130,9 @@ class GraphqlConfig(
         {{#each service.graphql_types_backed_by_external_rest_resource as |graphql_type| ~}}
         {{define "rest_resource_name" graphql_type.rest_resource.name ~}}
         {{lower-camel rest_resource_name}}Resolver.registerFetcher(it)
+        {{/each}}
+        {{#each service.graphql_types_backed_by_rdbms_table as |graphql_type| ~}}
+        {{lower-camel graphql_type.name}}Resolver.registerFetcher(it)
         {{/each}}
     }
     .fieldVisibility(fieldVisibility)

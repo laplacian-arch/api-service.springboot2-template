@@ -1,0 +1,23 @@
+{{define 'data_model' graphql_type.data_model ~}}
+{{define 'data_model_class_name' (upper-camel data_model.name) ~}}
+{{define 'class_name' (concat data_model_class_name 'Repository') ~}}
+{{define 'result_class_name' (concat data_model_class_name 'Record') ~}}
+{{define 'mybatis_mappers' graphql_type.mybatis_mappers ~}}
+{{define 'package' (concat service.namespace '.db.' (lower-snake data_model.name)) ~}}
+package {{package}}
+{{#if mybatis_mappers ~}}
+import org.apache.ibatis.annotations.Mapper
+{{/if}}
+{{#each graphql_type.mybatis_mappers as |mapper| ~}}
+{{#if mapper.parameters ~}}
+import {{package}}.{{lower-snake mapper.id}}.*
+{{/if}}
+{{/each}}
+
+{{#if mybatis_mappers}}@Mapper{{/if}}
+interface {{class_name}} {
+    {{#each graphql_type.mybatis_mappers as |mapper| ~}}
+    {{define 'input_class_name' (concat (upper-camel mapper.id) 'Input') ~}}
+    fun {{lower-camel mapper.id}}({{if mapper.parameters (concat 'input: ' input_class_name) ''}}) :List<{{result_class_name}}>
+    {{/each}}
+}
