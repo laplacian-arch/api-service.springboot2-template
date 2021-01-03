@@ -9,10 +9,10 @@ type {{upper-camel rest_resource.name}} {
   """
   {{shift query.description width=2}}
   """
-  {{lower-camel operation.name}}(
+  {{lower-camel operation.name}}{{#if operation.arguments ~}}(
   {{#each operation.arguments as |argument| }}
     {{lower-camel argument.name}}: {{argument.graphql_type}}{{if argument.required '!'}}
   {{/each}}
-  ): {{response_data_class}}!
+  ){{~/if}}: {{response_data_class}}!
   {{/each}}
 }

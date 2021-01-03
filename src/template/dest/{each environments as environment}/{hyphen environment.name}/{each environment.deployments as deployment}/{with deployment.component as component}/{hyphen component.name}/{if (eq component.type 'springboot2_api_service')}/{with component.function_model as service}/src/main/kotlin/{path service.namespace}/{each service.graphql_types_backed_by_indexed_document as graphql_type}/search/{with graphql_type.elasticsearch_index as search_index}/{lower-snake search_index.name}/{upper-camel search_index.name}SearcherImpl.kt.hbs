@@ -1,5 +1,6 @@
 {{define "class_base_name" (upper-camel graphql_type.name) ~}}
 {{define "instance_base_name" (lower-camel graphql_type.name) ~}}
+{{define 'index_default_sorts' search_index.default_sorts ~}}
 {{define 'index_fields' search_index.document_model.stored_properties ~}}
 package {{service.namespace}}.search.{{lower-snake graphql_type.name}}
 
@@ -70,6 +71,19 @@ class {{class_base_name}}SearcherImpl(
             IndexCoordinates.of(INDEX_NAME),
         )
         .map{ it.content }
+        {{#if index_default_sorts ~}}
+        .sort(
+        {{~#each index_default_sorts as |sort| ~}}
+        {{define 'sort_field' (concat (lower-camel sort.field) (if sort.is_numeric '.toInt()' '')) ~}}
+        {{define 'sort_order' (if (eq sort.order 'desc') 'Descending' '') ~}}
+        {{~#if @first ~}}
+        compareBy{{sort_order}}<{{class_base_name}}Document> { it.{{sort_field}} }
+        {{~else~}}
+        .thenBy{{sort_order}} { it.{{sort_field}} }
+        {{~/if~}}
+        {{~/each~}}
+        )
+        {{~/if}}
         .collectList()
         .toFuture()
     }

@@ -1,16 +1,14 @@
 {{define "package" (concat service.namespace '.rpc.rest.' (lower-snake rest_resource.name)) ~}}
 package {{package}}
 
-import java.util.concurrent.CompletableFuture
-
+import graphql.GraphQLContext
+import reactor.core.publisher.Mono
 {{#each rest_resource.operations as |operation| ~}}
 import {{package}}.{{lower-snake operation.name}}.*
 {{/each}}
 
 interface {{upper-camel rest_resource.name}}RestResource {
     {{#each rest_resource.operations as |operation| ~}}
-    fun {{lower-camel operation.name}}(
-        input: {{upper-camel operation.name}}Input
-    ): CompletableFuture<{{upper-camel operation.name}}Response>
+    fun {{lower-camel operation.name}}({{#if operation.arguments}}input: {{upper-camel operation.name}}Input, {{/if}}context: GraphQLContext): Mono<{{upper-camel operation.name}}Response>
     {{/each}}
 }

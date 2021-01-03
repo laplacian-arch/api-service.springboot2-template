@@ -43,7 +43,7 @@
                 {{/if}}
             {{else if (eq predicate_type 'query_string') ~}}
             QueryBuilders
-                .queryStringQuery({{dquote PREDICATE.query}})
+                .queryStringQuery(if ({{dquote PREDICATE.query}}.isBlank()) "*:*" else {{dquote PREDICATE.query}})
                 {{#if (not-null PREDICATE.default_field) ~}}
                 .defaultField({{dquote PREDICATE.default_field}})
                 {{/if}}
@@ -215,6 +215,7 @@ fun {{query_name}}Query(
             (eq aggregate_type 'bucket_script')
             (eq aggregate_type 'bucket_selector')
             (eq aggregate_type 'bucket_sort')
+            (eq aggregate_type 'avg_bucket')
           ) 'PipelineAggregatorBuilders'
           'AggregationBuilders'
         ) ~}}
@@ -254,6 +255,13 @@ fun {{query_name}}Query(
                 "{{bucket.name}}" to "{{bucket.path}}",
                 {{/each}}
             ), Script({{dquote AGGREGATE.script}})
+        )
+        {{else if (eq aggregate_type 'avg_bucket') ~}}
+        .{{lower-camel aggregate_type}}(
+            "{{AGGREGATE.name}}", 
+            {{#if AGGREGATE.buckets_path ~}}
+            "{{AGGREGATE.buckets_path}}"
+            {{/if}}
         )
         {{else if (eq aggregate_type 'bucket_sort') ~}}
         {{#if AGGREGATE.sorts ~}}
@@ -342,6 +350,28 @@ fun {{query_name}}Query(
         {{/if}}
         {{#if AGGREGATE.format ~}}
         .format("{{AGGREGATE.format}}")
+        {{/if}}
+        {{#if AGGREGATE.variable_min_doc_count ~}}
+        .also{ aggregate -> "{{AGGREGATE.min_doc_count}}".let{ aggregate.minDocCount(it.toInt()) }}
+        {{else if AGGREGATE.min_doc_count ~}}
+        .minDocCount({{AGGREGATE.min_doc_count}})
+        {{/if}}
+        {{define 'extended_bounds' AGGREGATE.extended_bounds ~}}
+        {{#if extended_bounds ~}}
+        .extendedBounds(
+            ExtendedBounds(
+                {{#if extended_bounds.min ~}}
+                {{dquote extended_bounds.min}}.replace("now||", "now"), 
+                {{else ~}}
+                null, 
+                {{/if}}
+                {{#if extended_bounds.max ~}}
+                {{dquote extended_bounds.max}}.replace("now||", "now")
+                {{else ~}}
+p9                null
+                {{/if}}
+            )
+        )
         {{/if}}
         {{#if AGGREGATE.timezone ~}}
         .timeZone(ZoneOffset.of("{{AGGREGATE.timezone}}"))
@@ -475,7 +505,10 @@ fun {{query_name}}Query(
                 {{~else~}}
                 this.{{lower-camel aggregate_name}} = (aggregate as Filter).docCount
                 {{~/if~}}
-                {{else if (eq aggregate_type 'bucket_script') ~}}
+                {{else if (or
+                  (eq aggregate_type 'bucket_script')
+                  (eq aggregate_type 'avg_bucket')
+                ) ~}}
                 val value = (aggregate as? SimpleValue)?.value() ?: 0.0
                 this.{{lower-camel aggregate_name}} = if ((value.isNaN() || value.isInfinite())) 0.0 else value
                 {{else if (or

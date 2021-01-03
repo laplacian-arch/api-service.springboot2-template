@@ -50,15 +50,12 @@ class GraphqlConfig(
     @Bean
     fun graphql(
         schema: GraphQLSchema,
-        exceptionHandler: DataFetcherExceptionHandler,
+        exceptionHandler: DataFetcherExceptionHandler?,
     ): GraphQL = GraphQL
         .newGraphQL(schema)
-        .queryExecutionStrategy(AsyncExecutionStrategy(exceptionHandler))
         .instrumentation(GraphqlFieldFilteringInstrument(ignoredFieldsPatterns))
+        .apply { if (exceptionHandler != null) queryExecutionStrategy(AsyncExecutionStrategy(exceptionHandler)) }
         .build()
-
-    @Bean
-    fun exceptionHandler(): DataFetcherExceptionHandler = GraphqlExceptionHandler()
 
     @Bean
     fun blockedFields(): GraphqlFieldVisibility = blockedFieldsPatterns

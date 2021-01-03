@@ -6,16 +6,13 @@
 package {{package}}
 
 import org.springframework.stereotype.Component
-import org.springframework.web.util.UriBuilder
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 {{#if depends_on_cache ~}}
 import org.springframework.cache.CacheManager
-import reactor.core.publisher.Mono
 {{~/if}}
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
+import graphql.GraphQLContext
+import reactor.core.publisher.Mono
 import com.fasterxml.jackson.module.kotlin.*
 import org.slf4j.*
 
@@ -43,24 +40,18 @@ class {{class_name}}(
     /**
      * {{trim operation.description}}
      */
-    override fun {{operation_name}}(
-        input: {{input_class_name}}
-    {{#if (not cache_policy) ~}}
-    ): CompletableFuture<{{response_class_name}}> {
-    {{~else~}}
-    ): CompletableFuture<{{response_class_name}}> =
-        withCache(
-            cacheManager.getCache("{{cache_policy.key}}")!!,
-            this::{{operation_name}}NoCache,
-        )(input)
+    override fun {{operation_name}}({{#if operation.arguments}}input: {{input_class_name}}, {{/if}}context: GraphQLContext): Mono<{{response_class_name}}> {{if cache_policy '=' '{'}}
         {{#if cache_policy ~}}
-        .toFuture()
-        {{~/if}}
+        withCache(
+            cacheManager.getCache("{{cache_policy.key}}")!!
+        {{#if operation.arguments ~}}
+        ) { params: {{input_class_name}} -> {{operation_name}}NoCache(params, context) }(input)
+        {{else ~}}
+        ) { _ -> {{operation_name}}NoCache(context) }("")
+        {{/if}}
 
-    private fun {{operation_name}}NoCache(
-        input: {{input_class_name}}
-    ): Mono<{{response_class_name}}> {
-    {{~/if}}
+    private fun {{operation_name}}NoCache({{#if operation.arguments}}input: {{input_class_name}}, {{/if}}context: GraphQLContext): Mono<{{response_class_name}}> {
+        {{~/if}}
         {{#each operation.arguments as |argument| ~}}
         val {{lower-camel argument.name}} = input.{{lower-camel argument.name}}
         {{/each}}
@@ -71,21 +62,23 @@ class {{class_name}}(
             {{#each operation.query_parameters as |parameter| ~}}
             .let { {{if parameter.multiple 'queryParams' 'queryParam'}}(it, {{dquote parameter.name}}, {{dquote parameter.value}}) }
             {{/each}}
-            .build(mapOf(
+            .build({{#if operation.path_parameters ~}}mapOf(
                 {{#each operation.path_parameters as |param| ~}}
                 "{{lower-camel param.name}}" to {{dquote param.value}},
                 {{/each}}
-            ))
+            ){{~/if}})
         }
-        .let { commonRequestSettings(it) }
+        .let { commonRequestSettings(it, context) }
         {{#each operation.http_headers as |header| ~}}
         .header({{dquote header.name}}, {{dquote header.value}})
         {{/each}}
-        .retrieve()
-        .bodyToMono({{upper-camel operation.name}}Response::class.java)
-        {{#if (not cache_policy) ~}}
-        .toFuture()
-        {{~/if}}
+        .exchange()
+        .flatMap { response ->
+            {{#if rest_resource.enable_automatic_cookie_handling ~}}
+            handleResponseCookies(response, context)
+            {{/if}}
+            response.bodyToMono({{upper-camel operation.name}}Response::class.java)
+        }
     }
     {{/each}}
 

@@ -30,7 +30,7 @@ class {{CLASS_NAME}}: Serializable {
       '""'
     ) ~}}
     @JsonProperty("{{property.name}}")
-    var {{lower-camel property.name}}: {{prop_type}}{{if property.nullable '?'}} = {{#if property.default_value}}property.default_value{{else}}{{default_value}}{{/if}}
+    var {{lower-camel property.name}}: {{prop_type}}{{if property.nullable '?'}} = {{if property.default_value property.default_value default_value}}
     {{/each}}
 
     {{#each MODEL.stored_relationships as |relationship| ~}}
