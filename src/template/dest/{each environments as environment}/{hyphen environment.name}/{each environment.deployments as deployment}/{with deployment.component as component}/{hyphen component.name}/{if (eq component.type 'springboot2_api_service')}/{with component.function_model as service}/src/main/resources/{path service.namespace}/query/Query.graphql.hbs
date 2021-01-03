@@ -42,4 +42,10 @@ type Query {
   """
   {{lower-camel type.name}}: {{upper-camel type.elasticsearch_index.name}}
   {{/each}}
+  {{#each service.graphql_types_backed_by_rdbms_table as |graphql_type| ~}}
+  """
+  {{graphql_type.description}}
+  """
+  {{lower-camel graphql_type.name}}: {{upper-camel graphql_type.name}}
+  {{/each}}
 }

@@ -62,6 +62,9 @@ class QueryResolver(
         {{#each service.graphql_types_backed_by_indexed_document as |graphql_type| ~}}
         .dataFetcher("{{lower-camel graphql_type.name}}") { _ -> emptyMap<String, String>()}
         {{/each}}
+        {{#each service.graphql_types_backed_by_rdbms_table as |graphql_type| ~}}
+        .dataFetcher("{{lower-camel graphql_type.name}}") { _ -> emptyMap<String, String>()}
+        {{/each}}
     )
 
     companion object {

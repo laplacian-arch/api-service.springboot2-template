@@ -1,0 +1,20 @@
+{{define 'result_type_class_name' (concat (upper-camel data_model.name) 'Record') ~}}
+"""
+A Graphql type representing {{graphql_type.name}}.
+"""
+type {{upper-camel graphql_type.name}} {
+  {{#each graphql_type.mybatis_mappers as |mybatis_mapper| ~}}
+  """
+  {{mybatis_mapper.id}}
+  """
+  {{#if (not mybatis_mapper.parameters) ~}}
+  {{lower-camel mybatis_mapper.id}}: [{{result_type_class_name}}!]!
+  {{else}}
+  {{lower-camel mybatis_mapper.id}}(
+    {{#each mybatis_mapper.parameters as |param| ~}}
+    {{lower-camel param.name}}: {{upper-camel param.type}}{{if (not nullable) '!'}}
+    {{/each}}
+  ): [{{result_type_class_name}}!]!
+  {{/if}}
+  {{/each}}
+}
