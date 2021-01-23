@@ -1,0 +1,14 @@
+{{define 'data_model' graphql_type.data_model ~}}
+{{define 'class_base_name' (upper-camel graphql_type.name) ~}}
+{{define 'record_class_name' (concat class_base_name 'Record') ~}}
+"""
+A graphql type representing a record of {{graphql_type.name}}.
+"""
+type {{record_class_name}} {
+    {{#each data_model.stored_properties as |property| ~}}
+    """
+    {{trim property.description}}
+    """
+    {{lower-camel property.name}}: {{property.class_name}}{{if (not property.nullable) '!'}},
+    {{/each}}
+}
