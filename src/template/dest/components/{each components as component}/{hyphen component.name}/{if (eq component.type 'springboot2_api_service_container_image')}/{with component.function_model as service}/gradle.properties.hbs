@@ -9,6 +9,9 @@ graphqlExtendedScalarVersion={{component.graphql_extended_scalar_version}}
 {{#if service.depends_on_mybatis ~}}
 springbootMybatisVersion={{component.springboot_mybatis_version}}
 {{~/if}}
-{{#if service.depends_on_oracle_jdbc_driver ~}}
-oracleDriverVersion={{component.oracle_jdbc_driver_version}}
+{{#if service.depends_on_oracle_jdbc ~}}
+oracleJdbcDriverVersion={{component.oracle_jdbc_driver_version}}
+{{~/if}}
+{{#if service.depends_on_postgres_jdbc ~}}
+postgresJdbcDriverVersion={{component.postgres_jdbc_driver_version}}
 {{~/if}}

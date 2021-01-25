@@ -1,13 +1,18 @@
-{{define "class_name" (concat (upper-camel mybatis_mapper.id) 'Input') ~}}
-package {{service.namespace}}.db.{{lower-snake data_model.name}}.{{lower-snake mybatis_mapper.id}}
+{{define "class_base_name" (upper-camel mybatis_mapper.id) ~}}
+{{define "input_class_name" (concat class_base_name 'Input') ~}}
+{{define 'package' (concat service.namespace '.graphql.type.' (lower-snake graphql_type.name)) '.' (lower-snake mybatis_mapper.id) ~}}
+package {{package}}
 
-data class {{class_name}} (
+/**
+ * A data class for input parameters of the {{mybatis_mapper.id}} query.
+ */
+data class {{input_class_name}} (
     {{#each mybatis_mapper.parameters as |parameter| ~}}
     val {{lower-camel parameter.name}}: {{parameter.class_name}}{{if parameter.nullable "?" }} = {{trim parameter.default_value}},
     {{/each}}
 ) {
     companion object {
-        fun from(args: Map<String, Any?>): {{class_name}} {
+        fun from(args: Map<String, Any?>): {{input_class_name}} {
             return {{class_name}}(
                 {{#each mybatis_mapper.parameters as |argument| ~}}
                 {{define "name" (lower-camel argument.name) ~}}

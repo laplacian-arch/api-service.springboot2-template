@@ -1,7 +1,0 @@
-{{define 'class_name' (concat (upper-camel data_model.name) 'Record') ~}}
-
-type {{class_name}} {
-    {{#each data_model.stored_properties as |property| ~}}
-    {{lower-camel property.name}}: {{property.class_name}}{{if (not property.nullable) '!'}},
-    {{/each}}
-}

@@ -16,12 +16,10 @@ java \
   ${IMAGE_VERSION:+ -Dimage.version=}${IMAGE_VERSION} \
   -jar /app/api.jar \
   {{#each service.datasources as |datasource| ~}}
-  {{#if (eq datasource.type 'oracle_jdbc') ~}}
   {{define 'prefix' (concat 'datasource.' (hyphen datasource.name) '.') ~}}
   {{printf '${%s:+ --%s=}${%s}' (upper-snake (concat prefix 'username')) (concat prefix 'username') (upper-snake (concat prefix 'username'))}} \
   {{printf '${%s:+ --%s=}${%s}' (upper-snake (concat prefix 'password')) (concat prefix 'password') (upper-snake (concat prefix 'password'))}} \
   {{printf '${%s:+ --%s=}${%s}' (upper-snake (concat prefix 'jdbc-url')) (concat prefix 'jdbc-url') (upper-snake (concat prefix 'jdbc-url'))}} \
-  {{/if}}
   {{/each}}
   {{#if service.depends_on_redis_cache ~}}
   {{printf '${%s:+ --%s=}${%s}' 'REDIS_AUTH_KEY' 'spring.redis.password' 'REDIS_AUTH_KEY'}} \

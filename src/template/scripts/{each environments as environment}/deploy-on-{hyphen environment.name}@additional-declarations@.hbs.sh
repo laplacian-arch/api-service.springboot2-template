@@ -1,12 +1,12 @@
-{{#each environment.deployments as |deployment| ~}}
-{{#if (eq deployment.type 'springboot2_api_service_container_deployment') ~}}
-build_component_for_{{lower-snake deployment.name}}() {
-  echo "Preparing the container image for {{deployment.name}}..."
-  {{#if deployment.use_locally_built_image ~}}
-  (cd $COMPONENT_BASE_DIR/{{hyphen deployment.component.name}}
+{{define 'deployment_components' (unique (map environment.deployments '@it.component')) ~}}
+{{#each deployment_components as |component| ~}}
+{{#if component.custom_built ~}}
+{{#if (eq component.type 'springboot2_api_service_container_image') ~}}
+build_{{lower-snake component.name}}() {
+  (cd $COMPONENT_BASE_DIR/{{hyphen component.name}}
     ./gradlew build
   )
-  {{/if}}
 }
+{{/if}}
 {{/if}}
 {{/each}}

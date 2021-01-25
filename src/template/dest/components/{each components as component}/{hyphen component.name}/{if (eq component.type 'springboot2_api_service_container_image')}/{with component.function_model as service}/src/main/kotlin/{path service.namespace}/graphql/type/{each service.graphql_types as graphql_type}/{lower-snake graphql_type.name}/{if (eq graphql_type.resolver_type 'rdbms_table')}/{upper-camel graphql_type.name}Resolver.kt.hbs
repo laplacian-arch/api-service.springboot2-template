@@ -1,9 +1,9 @@
+{{define 'class_base_name' (upper-camel graphql_type.name) ~}}
+{{define 'resolver_class_name' (concat class_base_name 'Resolver') ~}}
+{{define 'repository_class_name' (concat class_base_name 'Repository') ~}}
 {{define 'data_model' graphql_type.data_model ~}}
-{{define 'data_model_class_name' (upper-camel data_model.name) ~}}
-{{define 'class_name' (concat (upper-camel graphql_type.name) 'Resolver') ~}}
-{{define 'repository_class_name' (concat data_model_class_name 'Repository') ~}}
-{{define 'result_class_name' (concat data_model_class_name 'Record') ~}}
-{{define 'package' (concat service.namespace '.db.' (lower-snake data_model.name)) ~}}
+{{define 'mybatis_mappers' graphql_type.mybatis_mappers ~}}
+{{define 'package' (concat service.namespace '.graphql.type.' (lower-snake graphql_type.name)) ~}}
 package {{package}}
 
 import org.springframework.stereotype.Component
@@ -14,27 +14,27 @@ import java.util.concurrent.CompletableFuture
 import reactor.core.publisher.Mono
 {{#each graphql_type.mybatis_mappers as |mapper| ~}}
 {{#if mapper.parameters ~}}
-import {{package}}.{{lower-snake mapper.id}}.*
+import {{package}}.{{lower-snake mapper.name}}.*
 {{/if}}
 {{/each}}
 /**
  * The graphql type resolver for {{graphql_type.name}} type.
  */
 @Component
-class {{class_name}}(
+class {{resolver_class_name}}(
     val {{lower-camel repository_class_name}}: {{repository_class_name}},
 ) {
     {{#each graphql_type.mybatis_mappers as |mybatis_mapper| ~}}
-    {{define 'method_name' (lower-camel mybatis_mapper.id) ~}}
-    {{define 'input_class_name' (concat (upper-camel mybatis_mapper.id) 'Input') ~}}
-    fun {{method_name}}(context: DataFetchingEnvironment): CompletableFuture<List<{{result_class_name}}>>
+    {{define 'method_name' (lower-camel mybatis_mapper.name) ~}}
+    {{define 'input_class_name' (concat (upper-camel mybatis_mapper.name) 'Input') ~}}
+    fun {{method_name}}(context: DataFetchingEnvironment): CompletableFuture<List<{{mybatis_mapper.result_class_name}}>>
         = Mono.fromCallable { {{lower-camel repository_class_name}}.{{method_name}}({{#if mybatis_mapper.parameters}}{{input_class_name}}.from(context.arguments){{/if}}) }.toFuture()
     {{/each}}
 
     fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
         TypeRuntimeWiring.newTypeWiring("{{upper-camel graphql_type.name}}")
         {{#each graphql_type.mybatis_mappers as |mybatis_mapper| ~}}
-        {{define 'method_name' (lower-camel mybatis_mapper.id) ~}}
+        {{define 'method_name' (lower-camel mybatis_mapper.name) ~}}
         .dataFetcher("{{method_name}}") { env -> {{method_name}}(env) }
         {{/each}}
     )

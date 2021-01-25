@@ -39,6 +39,12 @@
     - 'ENABLE_JMX=true'
     - 'JMX_PORT={{deployment.jmx_port}}'
     {{/if}}
+    {{#each deployment.datasources as |datasource| ~}}
+    {{define 'prefix' (concat 'datasource.' (hyphen datasource.name) '.') ~}}
+    {{printf "- '%s=%s'" (upper-snake (concat prefix 'username')) datasource.username}}
+    {{printf "- '%s=%s'" (upper-snake (concat prefix 'password')) datasource.password}}
+    {{printf "- '%s=%s'" (upper-snake (concat prefix 'jdbc-url')) datasource.jdbc_connection_string}}
+    {{/each}}
     {{#if service.depends_on_redis_cache ~}}
     {{define 'redis_server_deployment' (first (filter environment.deployments "(eq @it.component.type 'redis_server')")) ~}}
     - 'REDIS_HOST={{redis_server_deployment.component.instance_name}}'

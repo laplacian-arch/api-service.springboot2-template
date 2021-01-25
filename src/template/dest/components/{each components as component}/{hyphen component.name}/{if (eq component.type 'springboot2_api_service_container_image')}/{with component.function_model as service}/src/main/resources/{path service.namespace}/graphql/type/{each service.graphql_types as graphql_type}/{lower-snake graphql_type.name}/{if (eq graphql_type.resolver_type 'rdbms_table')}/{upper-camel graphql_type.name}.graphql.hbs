@@ -1,0 +1,23 @@
+{{define 'class_base_name' (upper-camel graphql_type.name) ~}}
+{{define 'data_model' graphql_type.data_model ~}}
+{{define 'mybatis_mappers' graphql_type.mybatis_mappers ~}}
+{{define 'package' (concat service.namespace '.graphql.type.' (lower-snake graphql_type.name)) ~}}
+"""
+A Graphql type representing {{graphql_type.name}}.
+"""
+type {{class_base_name}} {
+  {{#each graphql_type.mybatis_mappers as |mybatis_mapper| ~}}
+  """
+  {{mybatis_mapper.description}}
+  """
+  {{#if (not mybatis_mapper.parameters) ~}}
+  {{lower-camel mybatis_mapper.name}}: [{{mybatis_mapper.result_class_name}}!]!
+  {{else}}
+  {{lower-camel mybatis_mapper.name}}(
+    {{#each mybatis_mapper.parameters as |param| ~}}
+    {{lower-camel param.name}}: {{upper-camel param.type}}{{if (not nullable) '!'}}
+    {{/each}}
+  ): [{{mybatis_mapper.result_class_name}}!]!
+  {{/if}}
+  {{/each}}
+}

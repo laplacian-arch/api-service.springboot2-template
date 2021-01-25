@@ -25,23 +25,26 @@ dependencies {
   {{/if}}
   {{#if service.depends_on_cache ~}}
   implementation 'org.springframework.boot:spring-boot-starter-cache'
+  implementation 'io.projectreactor.addons:reactor-extra:3.3.4.RELEASE'
+  implementation 'com.github.ben-manes.caffeine:caffeine'
+  {{/if}}
   {{#if service.depends_on_redis_cache ~}}
   implementation 'org.springframework.boot:spring-boot-starter-data-redis'
   {{/if}}
   {{#if service.depends_on_mybatis ~}}
   implementation "org.mybatis.spring.boot:mybatis-spring-boot-starter:$springbootMybatisVersion"
   {{/if}}
-  implementation 'io.projectreactor.addons:reactor-extra:3.3.4.RELEASE'
-  implementation 'com.github.ben-manes.caffeine:caffeine'
-  {{/if}}
   implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
   implementation "com.graphql-java:graphql-java-spring-boot-starter-webflux:$graphqlJavaWebfluxVersion"
   implementation "com.graphql-java:graphql-java-extended-scalars:$graphqlExtendedScalarVersion"
-  {{#if service.graphql_types_backed_by_database_table ~}}
-  runtimeOnly "io.r2dbc:r2dbc-postgresql:$r2dbcPostgresVersion"
+  {{#if service.depends_on_oracle_jdbc ~}}
+  runtimeOnly "com.oracle.database.jdbc:ojdbc10:$oracleJdbcDriverVersion"
   {{/if}}
-  {{#if service.depends_on_oracle_jdbc_driver ~}}
-  runtimeOnly "com.oracle.database.jdbc:ojdbc10:$oracleDriverVersion"
+  {{#if service.depends_on_postgres_r2dbc ~}}
+  runtimeOnly "io.r2dbc:r2dbc-postgresql:$postgresR2dbcDriverVersion"
+  {{/if}}
+  {{#if service.depends_on_postgres_jdbc ~}}
+  runtimeOnly "org.postgresql:postgresql:$postgresJdbcDriverVersion"
   {{/if}}
   {{#each component.additional_libraries as |library| ~}}
   implementation "{{library.gradle_dependency_entry}}"
@@ -58,12 +61,6 @@ repositories {
   {{else ~}}
   jcenter()
   {{/if}}
-}
-
-bootRun {
-  jvmArgs = [
-    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5060",
-  ]
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
