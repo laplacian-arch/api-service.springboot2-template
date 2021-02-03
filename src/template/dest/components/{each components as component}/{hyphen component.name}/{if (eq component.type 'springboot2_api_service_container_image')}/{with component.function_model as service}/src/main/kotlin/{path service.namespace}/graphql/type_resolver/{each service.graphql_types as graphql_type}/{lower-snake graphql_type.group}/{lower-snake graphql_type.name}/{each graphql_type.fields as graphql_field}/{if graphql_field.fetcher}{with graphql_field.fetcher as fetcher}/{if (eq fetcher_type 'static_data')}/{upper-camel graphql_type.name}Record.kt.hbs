@@ -1,0 +1,22 @@
+{{define 'class_name' (upper-camel graphql_type.name) ~}}
+{{define 'model' graphql_type.data_model ~}}
+package {{service.namespace}}.graphql.type.{{lower-snake graphql_type.name}}
+
+/**
+ * A data class for a {{graphql_type.name}} record.
+ */
+data class {{class_name}}(
+    {{#each model.stored_properties as |property| ~}}
+    val {{lower-camel property.name}}: {{property.class_name}}{{if property.nullable '?'}},
+    {{/each}}
+) {
+    companion object {
+        fun from(data: List<Map<String, Any?>>): List<{{class_name}}> = data.map {
+            {{class_name}}(
+                {{#each model.stored_properties as |property| ~}}
+                {{lower-camel property.name}} = it["{{lower-camel property.name}}"] as {{property.class_name}}{{if property.nullable '?'}},
+                {{/each}}
+            )
+        }
+    }
+}

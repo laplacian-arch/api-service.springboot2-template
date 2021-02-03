@@ -18,9 +18,9 @@ type {{upper-camel graphql_type.name}}Document {
   """
   {{shift relationship.description width=2}}
   """
-  {{define 'result_type' (printf
+  {{define 'return_type' (printf
     (if relationship.multiple '[%s!]' '%s') relationship.field_type_name
   ) ~}}
-  {{lower-camel relationship.name}}: {{result_type}}{{if (not relationship.nullable) '!'}}
+  {{lower-camel relationship.name}}: {{return_type}}{{if (not relationship.nullable) '!'}}
   {{/each}}
 }

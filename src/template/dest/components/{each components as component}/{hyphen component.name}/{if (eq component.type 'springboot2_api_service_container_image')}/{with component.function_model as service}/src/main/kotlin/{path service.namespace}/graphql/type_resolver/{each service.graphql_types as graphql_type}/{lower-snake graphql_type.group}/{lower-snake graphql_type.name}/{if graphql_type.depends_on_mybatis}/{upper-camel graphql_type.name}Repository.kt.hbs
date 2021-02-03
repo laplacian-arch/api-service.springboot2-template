@@ -1,0 +1,28 @@
+{{define 'class_base_name' (upper-camel graphql_type.name) ~}}
+{{define 'repository_class_name' (concat class_base_name 'Repository') ~}}
+{{define 'record_class_name' class_base_name ~}}
+{{define 'fields_fetched_with_mybatis' (filter graphql_type.query_fields '(eq @it.fetcher.type "mybatis")') ~}}
+{{define 'base_package' (concat service.namespace '.graphql.type_resolver.') ~}}
+{{define 'package' (concat base_package graphql_type.fqn) ~}}
+package {{package}}
+import org.apache.ibatis.annotations.Mapper
+{{#each fields_fetched_with_mybatis as |field| ~}}
+{{define 'ref_type' field.referencing_graphql_type ~}}
+import {{package}}.{{lower-snake field.name}}.*
+{{#if (not (eq ref_type graphql_type)) ~}}
+import {{concat base_package ref_type.fqn}}.*
+{{/if}}
+{{/each}}
+/**
+ * Datasource repository for the {{graphql_type.name}} type resolver.
+ */
+@Mapper
+interface {{repository_class_name}} {
+    {{#each fields_fetched_with_mybatis as |field| ~}}
+    {{define 'arguments_class_name' (concat (upper-camel field.name) 'FieldArguments') ~}}
+    /**
+     * Fetches {{field.name}} value from the datasource.
+     */
+    fun {{lower-camel field.name}}({{if (not field.root_field) (concat 'self: ' record_class_name ', ')}}arguments: {{arguments_class_name}}): {{field.return_type}}
+    {{/each}}
+}

@@ -1,0 +1,40 @@
+{{define 'class_base_name' (upper-camel graphql_field.name) ~}}
+{{define 'fetcher_class_name' (concat class_base_name 'FieldFetcher') ~}}
+{{define 'arguments_class_name' (concat class_base_name 'FieldArguments') ~}}
+{{define 'repository_class_name' (concat (upper-camel graphql_type.name) 'Repository') ~}}
+{{define 'record_class_name' (upper-camel graphql_type.name) ~}}
+{{define 'graphql_type_package' (concat service.namespace '.graphql.type_resolver.' graphql_type.fqn) ~}}
+{{define 'package'  (concat graphql_type_package '.' (lower-snake graphql_field.name)) ~}}
+package {{package}}
+
+import org.springframework.stereotype.Component
+import graphql.schema.DataFetchingEnvironment
+import kotlinx.coroutines.runBlocking
+import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toMono
+import {{graphql_type_package}}.*
+{{#if (not (eq graphql_type graphql_field.referencing_graphql_type)) ~}}
+{{define 'ref_type' graphql_field.referencing_graphql_type ~}}
+{{define 'graphql_type_package' (concat service.namespace '.graphql.type_resolver.' ref_type.fqn) ~}}
+import {{graphql_type_package}}.*
+{{/if}}
+
+/**
+ * The fetcher of the {{graphql_field.name}} of the {{graphql_type.name}}.
+ */
+@Component("{{graphql_field.fqn}}.fetcher")
+class {{fetcher_class_name}}(
+    val repository: {{repository_class_name}}
+) {
+    /**
+     * Fetches the content of the {{graphql_field.name}} field.
+     */
+    fun fetch(context: DataFetchingEnvironment): Mono<{{graphql_field.return_type}}> = runBlocking {
+        repository.{{lower-camel graphql_field.name}}(
+            {{#if (not graphql_field.root_field) ~}}
+            self = context.getSource(),
+            {{/if}}
+            arguments = {{arguments_class_name}}.from(context.arguments)
+        )
+    }.toMono()
+}

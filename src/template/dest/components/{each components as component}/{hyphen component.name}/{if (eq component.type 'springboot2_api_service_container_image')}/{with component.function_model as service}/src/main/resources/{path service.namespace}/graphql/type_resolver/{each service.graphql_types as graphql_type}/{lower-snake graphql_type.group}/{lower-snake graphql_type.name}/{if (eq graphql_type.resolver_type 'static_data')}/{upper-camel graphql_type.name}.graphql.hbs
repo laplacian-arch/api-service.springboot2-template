@@ -1,0 +1,20 @@
+{{define 'data_model' graphql_type.data_model ~}}
+{{define 'class_base_name' (upper-camel graphql_type.name) ~}}
+{{define 'record_class_name' class_base_name ~}}
+{{define 'default_query_name' (lower-camel graphql_type.default_query_name) ~}}
+"""
+A graphql type representing {{graphql_type.name}}.
+"""
+type {{class_base_name}} {
+    """
+    Finds {{graphql_type.name}} records.
+    """
+    {{lower-camel default_query_name}}: [{{record_class_name}}!]!,
+    {{#each graphql_type.queries as |query| ~}}
+    """
+    {{trim query.description}}
+    """
+    {{lower-camel query.name}}: [{{record_class_name}}!]!,
+    {{/each}}
+}
+    

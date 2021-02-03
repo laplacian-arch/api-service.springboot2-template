@@ -19,9 +19,12 @@ import org.dataloader.DataLoaderRegistry
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 
-import {{service.namespace}}.graphql.type.QueryResolver
+import {{service.namespace}}.graphql.type_resolver.QueryResolver
+{{#each service.graphql_type_groups as |graphql_type_group| ~}}
+import {{service.namespace}}.graphql.type_resolver.{{lower-snake graphql_type_group}}.*
+{{/each}}
 {{#each service.graphql_types as |graphql_type| ~}}
-import {{service.namespace}}.graphql.type.{{lower-snake graphql_type.name}}.*
+import {{service.namespace}}.graphql.type_resolver.{{lower-snake graphql_type.group}}.{{lower-snake graphql_type.name}}.*
 {{/each}}
 
 @Configuration
@@ -73,6 +76,9 @@ class GraphqlConfig(
     @Bean
     fun buildRuntimeWiring(
         queryResolver: QueryResolver,
+        {{#each service.graphql_type_groups as |graphql_type_group| ~}}
+        {{lower-camel graphql_type_group}}QueryResolver: {{upper-camel graphql_type_group}}QueryResolver,
+        {{/each}}
         {{#each service.graphql_types as |graphql_type| ~}}
         {{lower-camel graphql_type.name}}Resolver: {{upper-camel graphql_type.name}}Resolver,
         {{/each}}
@@ -91,6 +97,9 @@ class GraphqlConfig(
     .scalar(ExtendedScalars.Time)
     .also {
         queryResolver.registerFetcher(it)
+        {{#each service.graphql_type_groups as |graphql_type_group| ~}}
+        {{lower-camel graphql_type_group}}QueryResolver.registerFetcher(it)
+        {{/each}}
         {{#each service.graphql_types as |graphql_type| ~}}
         {{lower-camel graphql_type.name}}Resolver.registerFetcher(it)
         {{/each}}

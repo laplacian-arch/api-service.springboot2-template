@@ -1,4 +1,4 @@
-{{#define "class_name"}}{{upper-camel service.name}}Application{{/define}}
+{{define "class_name" (concat (upper-camel service.name) "Application") ~}}
 package {{service.namespace}}
 
 import org.springframework.boot.SpringApplication

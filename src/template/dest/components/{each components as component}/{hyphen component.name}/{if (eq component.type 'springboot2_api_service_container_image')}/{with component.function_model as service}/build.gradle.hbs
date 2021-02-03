@@ -15,6 +15,7 @@ dependencies {
   implementation 'org.jetbrains.kotlin:kotlin-reflect'
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion"
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$kotlinxCoroutineVersion"
+  implementation "io.projectreactor.kotlin:reactor-kotlin-extensions:$reactorKotlinExtensionVersion"
   implementation 'org.springframework.boot:spring-boot-starter-webflux'
   implementation 'org.springframework.boot:spring-boot-starter-actuator'
   {{#if service.graphql_types_backed_by_database_table ~}}

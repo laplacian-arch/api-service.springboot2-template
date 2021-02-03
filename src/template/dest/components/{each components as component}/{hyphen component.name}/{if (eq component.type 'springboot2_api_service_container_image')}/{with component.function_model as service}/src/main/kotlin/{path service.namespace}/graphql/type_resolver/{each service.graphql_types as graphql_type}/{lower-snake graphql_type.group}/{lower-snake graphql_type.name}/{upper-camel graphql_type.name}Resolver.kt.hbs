@@ -1,0 +1,53 @@
+{{define 'class_base_name' (upper-camel graphql_type.name) ~}}
+{{define 'resolver_class_name' (concat class_base_name 'Resolver') ~}}
+{{define 'query_fields_with_fetcher' (filter graphql_type.query_fields '@it.fetcher') ~}}
+{{define 'package' (concat service.namespace '.graphql.type_resolver.' graphql_type.fqn) ~}}
+package {{package}}
+
+import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Qualifier
+import graphql.schema.idl.RuntimeWiring
+import graphql.schema.idl.TypeRuntimeWiring
+import graphql.schema.DataFetchingEnvironment
+import reactor.core.publisher.Mono
+{{#each query_fields_with_fetcher as |field| ~}}
+import {{package}}.{{lower-snake field.name}}.*
+{{#if field.referencing_graphql_type ~}}
+{{define 'ref_type' field.referencing_graphql_type ~}}
+{{define 'graphql_type_package' (concat service.namespace '.graphql.type_resolver.' ref_type.fqn) ~}}
+import {{graphql_type_package}}.*
+{{/if}}
+{{/each}}
+
+/**
+ * The graphql type resolver for {{graphql_type.name}} type.
+ */
+@Component
+class {{resolver_class_name}}(
+    {{#each query_fields_with_fetcher as |field| ~}}
+    {{define 'fetcher_class_name' (concat (upper-camel field.name) 'FieldFetcher') ~}}
+    @Qualifier("{{field.fqn}}.fetcher") val {{lower-camel fetcher_class_name}}: {{fetcher_class_name}},
+    {{/each}}
+) {
+    {{#each query_fields_with_fetcher as |field| ~}}
+    {{define 'method_name' (lower-camel field.name) ~}}
+    {{define 'input_class_name' (concat (upper-camel field.name) 'FieldArguments') ~}}
+    {{define 'fetcher_class_name' (concat (upper-camel field.name) 'FieldFetcher') ~}}
+    /**
+     * Fetches the value of {{field.name}}.
+     */
+    fun {{method_name}}(environment: DataFetchingEnvironment): Mono<{{field.return_type}}>
+        = {{lower-camel fetcher_class_name}}.fetch(environment)
+    {{/each}}
+
+    /**
+     * Registers the field fetchers of the fields of {{graphql_type.name}} type.
+     */
+    fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
+        TypeRuntimeWiring.newTypeWiring("{{upper-camel graphql_type.name}}")
+        {{#each query_fields_with_fetcher as |field| ~}}
+        {{define 'method_name' (lower-camel field.name) ~}}
+        .dataFetcher("{{method_name}}") { env -> {{method_name}}(env).toFuture() }
+        {{/each}}
+    )
+}
