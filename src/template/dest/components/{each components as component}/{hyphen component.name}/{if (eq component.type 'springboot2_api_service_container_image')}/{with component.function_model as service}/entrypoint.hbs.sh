@@ -26,6 +26,6 @@ java \
   {{printf '${%s:+ --%s=}${%s}' 'REDIS_HOST' 'spring.redis.host' 'REDIS_HOST'}} \
   {{printf '${%s:+ --%s=}${%s}' 'REDIS_PORT' 'spring.redis.port' 'REDIS_PORT'}} \
   {{~/if}}
-  {{#each service_configurations as |config| ~}}
+  {{#each service.configurations as |config| ~}}
   {{printf '${%s:+ --%s=}${%s}' config.environment_variable_name config.key config.environment_variable_name}} \
   {{/each}}

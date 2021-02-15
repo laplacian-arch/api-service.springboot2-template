@@ -1,7 +1,6 @@
 {{define "package" (concat service.namespace '.rpc.rest.' (lower-snake rest_resource.name) '.' (lower-snake operation.name)) ~}}
 package {{package}}
 
-import {{service.namespace}}.query.*
 import {{service.namespace}}.util.*
 import java.time.*
 

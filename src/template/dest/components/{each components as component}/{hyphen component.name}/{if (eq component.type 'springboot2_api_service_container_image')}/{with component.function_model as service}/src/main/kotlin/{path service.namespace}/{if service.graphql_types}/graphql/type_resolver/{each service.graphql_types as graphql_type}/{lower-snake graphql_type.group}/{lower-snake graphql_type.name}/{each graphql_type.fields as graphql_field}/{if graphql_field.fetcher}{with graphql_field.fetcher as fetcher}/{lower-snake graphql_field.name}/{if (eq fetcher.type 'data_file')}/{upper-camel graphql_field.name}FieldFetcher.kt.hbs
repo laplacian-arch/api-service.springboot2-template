@@ -4,8 +4,8 @@
 {{define 'record_class_name' (upper-camel graphql_type.name) ~}}
 {{define 'base_package' (concat service.namespace '.graphql.type_resolver') ~}}
 {{define 'graphql_type_package' (concat base_package '.' graphql_type.fqn) ~}}
-{{define 'with_self' (not graphql_field.root_field) ~}}
 {{define 'filter' fetcher.result_filter ~}}
+{{define 'context_type' graphql_field.context_type ~}}
 {{define 'package'  (concat graphql_type_package '.' (lower-snake graphql_field.name)) ~}}
 package {{package}}
 
@@ -37,7 +37,7 @@ class {{fetcher_class_name}}(
         }.toMono()
         {{#if filter ~}}
         .map { result ->
-            {{#if (and with_self (contains filter 'self')) ~}}
+            {{#if (and context_type (contains filter 'self')) ~}}
             val self: {{record_class_name}} = environment.getSource()
             {{/if}}
             {{#if (and graphql_field.arguments (contains filter 'arguments')) ~}}

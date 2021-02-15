@@ -3,17 +3,15 @@
 {{define "depends_on_cache" (any rest_resource.operations '@it.effective_cache_policy') ~}}
 {{define "base_class_name" (upper-camel rest_resource.name) ~}}
 {{define "class_name" (concat base_class_name 'RestResourceClient') ~}}
+{{define "config_class_name" (concat base_class_name 'RestResourceConfig') ~}}
 package {{package}}
 
 import org.springframework.stereotype.Component
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpMethod
 {{#if depends_on_cache ~}}
 import org.springframework.cache.CacheManager
 {{~/if}}
-import graphql.GraphQLContext
 import reactor.core.publisher.Mono
-import com.fasterxml.jackson.module.kotlin.*
 import org.slf4j.*
 
 import {{base_package}}.RestResourceClientBase
@@ -21,14 +19,16 @@ import {{base_package}}.RestResourceClientBase
 import {{package}}.{{lower-snake operation.name}}.*
 {{/each}}
 
+/**
+ * An implementation of the {{upper-camel rest_resource.name}}RestResource interface
+ */
 @Component
 class {{class_name}}(
-    {{#each rest_resource.configurations as |config| ~}}
-    @Value("{{concat '\${' config.definition.key '}'}}")
-    private val {{config.variable_name}}: {{upper-camel config.definition.type}},
-    {{/each}}
     {{#if depends_on_cache ~}}
     private val cacheManager: CacheManager,
+    {{~/if}}
+    {{#if rest_resource.configurations ~}}
+    private val conf: {{config_class_name}},
     {{~/if}}
 ): RestResourceClientBase(), {{upper-camel rest_resource.name}}RestResource {
     {{#each rest_resource.operations as |operation| ~}}
@@ -40,7 +40,7 @@ class {{class_name}}(
     /**
      * {{trim operation.description}}
      */
-    override fun {{operation_name}}({{#if operation.arguments}}input: {{input_class_name}}, {{/if}}context: GraphQLContext): Mono<{{response_class_name}}> {{if cache_policy '=' '{'}}
+    override fun {{operation_name}}({{#if operation.arguments}}args: {{input_class_name}}{{/if}}): Mono<{{operation.response.type_in_java}}> =
         {{#if cache_policy ~}}
         withCache(
             cacheManager.getCache("{{cache_policy.key}}")!!
@@ -50,36 +50,44 @@ class {{class_name}}(
         ) { _ -> {{operation_name}}NoCache(context) }("")
         {{/if}}
 
-    private fun {{operation_name}}NoCache({{#if operation.arguments}}input: {{input_class_name}}, {{/if}}context: GraphQLContext): Mono<{{response_class_name}}> {
+    private fun {{operation_name}}NoCache({{#if operation.arguments}}args: {{input_class_name}}{{/if}}): Mono<{{operation.response.type_in_java}}> =
         {{~/if}}
-        {{#each operation.arguments as |argument| ~}}
-        val {{lower-camel argument.name}} = input.{{lower-camel argument.name}}
-        {{/each}}
-        return client({{dquote rest_resource.base_url}})
+        client({{dquote rest_resource.base_url}})
         .method(HttpMethod.{{upper-snake operation.method}})
-        .uri { it
+        .uri { uri -> uri
             .path({{dquote operation.path}})
             {{#each operation.query_parameters as |parameter| ~}}
-            .let { {{if parameter.multiple 'queryParams' 'queryParam'}}(it, {{dquote parameter.name}}, {{dquote parameter.value}}) }
+            .let { {{if parameter.multiple 'queryParams' 'queryParam'}}(it, {{dquote parameter.name}}, {{trim parameter.value}}) }
             {{/each}}
             .build({{#if operation.path_parameters ~}}mapOf(
                 {{#each operation.path_parameters as |param| ~}}
-                "{{lower-camel param.name}}" to {{dquote param.value}},
+                {{dquote param.name}} to {{trim param.value}},
                 {{/each}}
             ){{~/if}})
         }
-        .let { commonRequestSettings(it, context) }
+        .let { commonRequestSettings(it) }
         {{#each operation.http_headers as |header| ~}}
-        .header({{dquote header.name}}, {{dquote header.value}})
+        .header({{dquote header.name}}, {{trim header.value}})
         {{/each}}
         .exchange()
         .flatMap { response ->
             {{#if rest_resource.enable_automatic_cookie_handling ~}}
-            handleResponseCookies(response, context)
-            {{/if}}
-            response.bodyToMono({{upper-camel operation.name}}Response::class.java)
+            Mono.subscriberContext().map { context ->
+                handleResponseCookies(response, context)
+            }.map {
+                response
+            }
+            {{~/if}}
+            {{define "type" operation.response.type}}
+            {{define "cast_to_type" (case
+              operation.response.multiple "List"
+              (eq type "array") "List"
+              (eq type "object") "Map"
+              (eq type "number") "Int"
+              (upper-camel operation.response.type)
+            ) ~}}
+            response.bodyToMono({{cast_to_type}}::class.java) as Mono<{{operation.response.type_in_java}}>
         }
-    }
     {{/each}}
 
     companion object {

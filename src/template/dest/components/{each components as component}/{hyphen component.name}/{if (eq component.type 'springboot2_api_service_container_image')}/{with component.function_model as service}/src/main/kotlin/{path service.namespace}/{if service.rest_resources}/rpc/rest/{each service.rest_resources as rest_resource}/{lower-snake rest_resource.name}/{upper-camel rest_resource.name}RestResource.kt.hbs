@@ -7,8 +7,11 @@ import reactor.core.publisher.Mono
 import {{package}}.{{lower-snake operation.name}}.*
 {{/each}}
 
+/**
+ * The REST interface of the {{rest_resource.name}} resource.
+ */
 interface {{upper-camel rest_resource.name}}RestResource {
     {{#each rest_resource.operations as |operation| ~}}
-    fun {{lower-camel operation.name}}({{#if operation.arguments}}input: {{upper-camel operation.name}}Input, {{/if}}context: GraphQLContext): Mono<{{upper-camel operation.name}}Response>
+    fun {{lower-camel operation.name}}({{#if operation.arguments}}args: {{upper-camel operation.name}}Input{{/if}}): Mono<{{operation.response.type_in_java}}>
     {{/each}}
 }

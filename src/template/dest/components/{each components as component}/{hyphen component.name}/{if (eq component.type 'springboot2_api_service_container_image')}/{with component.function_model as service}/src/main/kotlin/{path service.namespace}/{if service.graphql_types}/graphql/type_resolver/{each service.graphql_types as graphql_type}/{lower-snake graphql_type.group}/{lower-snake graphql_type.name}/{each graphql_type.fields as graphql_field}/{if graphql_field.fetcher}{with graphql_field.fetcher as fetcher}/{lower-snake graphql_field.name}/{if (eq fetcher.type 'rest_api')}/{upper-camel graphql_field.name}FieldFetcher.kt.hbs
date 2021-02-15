@@ -1,0 +1,78 @@
+{{define 'class_base_name' (upper-camel graphql_field.name) ~}}
+{{define 'fetcher_class_name' (concat class_base_name 'FieldFetcher') ~}}
+{{define 'arguments_class_name' (concat class_base_name 'FieldArguments') ~}}
+{{define 'config_class_name' (concat (upper-camel graphql_type.name) 'ResolverConfig') ~}}
+{{define 'record_class_name' (upper-camel graphql_type.name) ~}}
+{{define 'base_package' (concat service.namespace '.graphql.type_resolver') ~}}
+{{define 'graphql_type_package' (concat base_package '.' graphql_type.fqn) ~}}
+{{define 'filter' fetcher.result_filter ~}}
+{{define 'context_type' graphql_field.context_type ~}}
+{{define 'rest_resource' fetcher.rest_resource ~}}
+{{define 'rest_operation' fetcher.rest_operation ~}}
+{{define 'rest_client_name' (concat (upper-camel rest_resource.name) 'RestResource') ~}}
+{{define 'package'  (concat graphql_type_package '.' (lower-snake graphql_field.name)) ~}}
+package {{package}}
+
+import org.springframework.stereotype.Component
+import graphql.schema.DataFetchingEnvironment
+import reactor.core.publisher.Mono
+import {{graphql_type_package}}.*
+{{#if (not (eq graphql_type graphql_field.referencing_graphql_type)) ~}}
+{{define 'ref_type' graphql_field.referencing_graphql_type ~}}
+{{define 'graphql_type_package' (concat service.namespace '.graphql.type_resolver.' ref_type.fqn) ~}}
+import {{graphql_type_package}}.*
+{{~/if}}
+import {{service.namespace}}.rpc.rest.{{lower-snake rest_resource.name}}.{{upper-camel rest_client_name}}
+import {{service.namespace}}.rpc.rest.{{lower-snake rest_resource.name}}.{{lower-snake rest_operation.name}}.*
+import {{service.namespace}}.util.*
+
+/**
+ * The fetcher of the {{graphql_field.name}} of the {{graphql_type.name}}.
+ */
+@Component("{{graphql_field.fqn}}.fetcher")
+class {{fetcher_class_name}}(
+    val {{lower-camel rest_client_name}}: {{upper-camel rest_client_name}},
+    {{#if graphql_type.configurations ~}}
+    val conf: {{config_class_name}},
+    {{~/if}}
+) {
+    /**
+     * Fetches the content of the {{graphql_field.name}} field.
+     */
+    fun fetch(environment: DataFetchingEnvironment): Mono<{{graphql_field.return_type}}> {
+        {{#if graphql_field.arguments ~}}
+        val args = {{arguments_class_name}}.from(environment.arguments)
+        {{~/if}}
+        return {{lower-camel rest_client_name}}
+        {{#if (not fetcher.argument_assignments) ~}}
+        .{{lower-camel rest_operation.name}}(environment.getContext())
+        {{else~}}
+        .{{lower-camel rest_operation.name}}({{upper-camel rest_operation.name}}Input(
+            {{#each fetcher.argument_assignments as |assignment| ~}}
+            {{define 'value' assignment.value ~}}
+            {{define 'value_expression' (case
+              (eq value.from 'fetcher_argument') (concat 'args.' (lower-camel value.name))
+              (eq value.from 'expression') (trim value.expression)
+              (eq value.from 'graphql_type_config') (concat 'conf.' (lower-camel value.name))
+              '""'
+            ) ~}}
+            {{lower-camel assignment.key}} = {{value_expression}},
+            {{/each}}
+        ))
+        {{~/if}}
+        .map { result ->
+            {{shift fetcher.result_mapper 12}}
+        }
+        {{#if filter ~}}
+        .map { result ->
+            {{#if (and with_self (contains filter 'self')) ~}}
+            val self: {{record_class_name}} = environment.getSource()
+            {{/if}}
+            {{#if (and graphql_field.arguments (contains filter 'arguments')) ~}}
+            val arguments = {{arguments_class_name}}.from(environment.arguments)
+            {{/if}}
+            {{shift fetcher.result_filter 12}}
+        }
+        {{~/if}}
+    }
+}

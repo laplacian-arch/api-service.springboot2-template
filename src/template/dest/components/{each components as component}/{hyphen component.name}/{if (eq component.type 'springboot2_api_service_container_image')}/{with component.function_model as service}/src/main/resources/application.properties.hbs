@@ -1,19 +1,6 @@
 {{#if service.datasources ~}}
 management.health.datasource.enabled=false
-{{/if}}
-{{#each service.datasources as |datasource| ~}}
-{{define 'prefix' (concat 'datasource.' (hyphen datasource.name)) ~}}
-{{prefix}}.driver-class-name={{datasource.driver-class-name}}
-{{/each}}
+{{~/if}}
 {{#if service.depends_on_elasticsearch ~}}
 management.health.elasticsearch.enabled=false
 {{~/if}}
-{{#if service.depends_on_redis_cache ~}}
-management.health.redis.enabled=false
-spring.redis.host=http://localhost
-spring.redis.port=6379
-spring.redis.password=
-{{~/if}}
-{{#each service_configurations as |config| ~}}
-{{config.key}}={{trim (java-property-value config.default_value)}}
-{{/each}}
