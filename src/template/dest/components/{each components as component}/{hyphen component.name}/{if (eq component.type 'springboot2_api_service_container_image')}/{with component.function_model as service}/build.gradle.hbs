@@ -48,6 +48,10 @@ dependencies {
   {{#if service.depends_on_postgres_jdbc ~}}
   runtimeOnly "org.postgresql:postgresql:$postgresJdbcDriverVersion"
   {{/if}}
+  {{#if service.depends_on_mysql_jdbc ~}}
+  runtimeOnly "mysql:mysql-connector-java:$mysqlJdbcDriverVersion"
+  {{/if}}
+
   {{#each component.additional_libraries as |library| ~}}
   implementation "{{library.gradle_dependency_entry}}"
   {{/each}}

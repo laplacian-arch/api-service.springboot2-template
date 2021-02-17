@@ -44,7 +44,7 @@ class {{resolver_class_name}}(
     /**
      * Registers all the field fetchers of graphql types which belong to this group.
      */
-    fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
+    fun registerFetcher(wiring: RuntimeWiring.Builder): RuntimeWiring.Builder = wiring.type(
         TypeRuntimeWiring.newTypeWiring("{{class_base_name}}")
         {{#each graphql_types_in_group as |graphql_type| ~}}
         {{#each graphql_type.root_query_fields as |field| ~}}

@@ -43,7 +43,7 @@ class {{resolver_class_name}}(
     /**
      * Registers the field fetchers of the fields of {{graphql_type.name}} type.
      */
-    fun registerFetcher(wiring: RuntimeWiring.Builder) = wiring.type(
+    fun registerFetcher(wiring: RuntimeWiring.Builder): RuntimeWiring.Builder = wiring.type(
             TypeRuntimeWiring.newTypeWiring("{{upper-camel graphql_type.fqn}}")
             {{#each (filter query_fields_with_fetcher '(not @it.context_data_model_name)') as |field| ~}}
             {{define 'method_name' (lower-camel field.name) ~}}

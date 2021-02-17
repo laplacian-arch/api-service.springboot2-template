@@ -16,3 +16,6 @@ oracleJdbcDriverVersion={{trim component.oracle_jdbc_driver_version}}
 {{#if service.depends_on_postgres_jdbc ~}}
 postgresJdbcDriverVersion={{trim component.postgres_jdbc_driver_version}}
 {{~/if}}
+{{#if service.depends_on_mysql_jdbc ~}}
+mysqlJdbcDriverVersion={{trim component.mysql_jdbc_driver_version}}
+{{/if}}
