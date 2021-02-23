@@ -30,8 +30,8 @@ class {{repository_class_name}} (
       (if field.multiple 'List<%s>' (if field.optional '%s?' '%s'))
       'Map<String, Any?>'
     ) ~}}
-    {{define 'selector_method' (if field.multiple 'selectList' 'selectOne') ~}}
     {{define 'in_batch' field.fetcher.is_batch ~}}
+    {{define 'selector_method' (if (or in_batch field.multiple) 'selectList' 'selectOne') ~}}
     /**
      * Fetches {{field.name}} value from the datasource.
      */
