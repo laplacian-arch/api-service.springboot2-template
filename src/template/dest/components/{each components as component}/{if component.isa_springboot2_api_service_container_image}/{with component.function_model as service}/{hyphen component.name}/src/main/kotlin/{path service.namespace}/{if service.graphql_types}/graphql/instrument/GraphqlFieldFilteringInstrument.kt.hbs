@@ -1,0 +1,39 @@
+package {{service.namespace}}.graphql.instrument
+
+import graphql.ExecutionResult
+import graphql.execution.instrumentation.SimpleInstrumentation
+import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters
+import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters
+import graphql.schema.*
+import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
+
+class GraphqlFieldFilteringInstrument(
+    private val fieldFilteringRules: List<GraphqlFieldFilteringRule<*>>
+): SimpleInstrumentation() {
+
+    override fun instrumentDataFetcher(
+        dataFetcher: DataFetcher<*>?,
+        parameters: InstrumentationFieldFetchParameters?
+    ): DataFetcher<*> {
+        val env = parameters!!.environment
+        val wrappedFetcher = when {
+            fieldFilteringRules.isEmpty() -> dataFetcher
+            else -> fieldFilteringRules.fold(dataFetcher as DataFetcher<*>) { f, rule ->
+                rule.wrapFetcher(f, env)
+            }
+        }
+        return super.instrumentDataFetcher(wrappedFetcher, parameters)
+    }
+
+    override fun instrumentExecutionResult(
+        executionResult: ExecutionResult?,
+        parameters: InstrumentationExecutionParameters?
+    ): CompletableFuture<ExecutionResult> {
+        return super.instrumentExecutionResult(executionResult, parameters)
+    }
+
+    companion object {
+        val LOG = LoggerFactory.getLogger(GraphqlFieldFilteringInstrument::class.java)
+    }
+}
