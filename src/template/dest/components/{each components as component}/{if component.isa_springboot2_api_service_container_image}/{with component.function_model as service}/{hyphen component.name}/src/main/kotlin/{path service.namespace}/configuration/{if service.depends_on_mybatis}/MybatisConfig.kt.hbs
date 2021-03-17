@@ -20,7 +20,7 @@ class MybatisConfig {
     ): SqlSessionFactory = SqlSessionFactoryBean().also {
         it.setDataSource(datasource)
         it.setMapperLocations(
-            *PathMatchingResourcePatternResolver().getResources("classpath*:tango/**/*Repository.xml")
+            *PathMatchingResourcePatternResolver().getResources("classpath*:**/*Repository.xml")
         )
     }.getObject()!!
 
