@@ -25,10 +25,18 @@ data class {{class_name}}(
         @JvmStatic
         fun from(record: Map<String, Any?>): {{class_name}} = {{class_name}}(
             {{#each model.stored_properties as |property| ~}}
+            {{#if (eq (lower-camel property.name) (lower-snake property.name)) ~}}
             {{lower-camel property.name}} = record["{{lower-camel property.name}}"] as {{property.class_name}}{{if property.nullable '?'}},
+            {{else}}
+            {{lower-camel property.name}} = (record["{{lower-camel property.name}}"] ?: record["{{lower-snake property.name}}"]) as {{property.class_name}}{{if property.nullable '?'}},
+            {{~/if}}
             {{/each}}
             {{#each model.aggregates as |aggregate| ~}}
+            {{#if (eq (lower-camel aggregate.name) (lower-snake aggregate.name)) ~}}
             {{lower-camel aggregate.name}} = ((record["{{lower-camel aggregate.name}}"] ?: emptyList<Map<String, Any?>>()) as List<Map<String, Any?>>).map{ {{upper-camel aggregate.reference_entity.name}}.from(it) },
+            {{else}}
+            {{lower-camel aggregate.name}} = ((record["{{lower-camel aggregate.name}}"] ?: record["{{lower-snake aggregate.name}}"] ?: emptyList<Map<String, Any?>>()) as List<Map<String, Any?>>).map{ {{upper-camel aggregate.reference_entity.name}}.from(it) },
+            {{~/if}}
             {{/each}}
         )
 

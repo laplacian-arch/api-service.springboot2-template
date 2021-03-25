@@ -14,13 +14,12 @@ import graphql.schema.visibility.BlockedFields
 import graphql.schema.visibility.GraphqlFieldVisibility
 import graphql.execution.AsyncExecutionStrategy
 import graphql.execution.DataFetcherExceptionHandler
+import graphql.execution.instrumentation.Instrumentation
 import graphql.scalars.ExtendedScalars
 import org.dataloader.DataLoaderRegistry
 import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 
-import {{service.namespace}}.graphql.instrument.GraphqlFieldFilteringInstrument
-import {{service.namespace}}.graphql.instrument.GraphqlFieldFilteringRule
 import {{service.namespace}}.graphql.type_resolver.QueryResolver
 
 @Configuration
@@ -32,17 +31,12 @@ class GraphqlConfig(
     fun graphql(
         schema: GraphQLSchema,
         exceptionHandler: DataFetcherExceptionHandler?,
-        fieldFilteringInstrument: GraphqlFieldFilteringInstrument,
+        instrumentations: List<Instrumentation>?,
     ): GraphQL = GraphQL
         .newGraphQL(schema)
-        .instrumentation(fieldFilteringInstrument)
+        .apply { instrumentations?.forEach{ instrumentation(it) } }
         .apply { if (exceptionHandler != null) queryExecutionStrategy(AsyncExecutionStrategy(exceptionHandler)) }
         .build()
-
-    @Bean
-    fun fieldFilteringInstrument(
-        fieldFilteringRules: List<GraphqlFieldFilteringRule<*>>
-    ): GraphqlFieldFilteringInstrument = GraphqlFieldFilteringInstrument(fieldFilteringRules)
 
     @Bean
     fun blockedFields(): GraphqlFieldVisibility = blockedFieldsPatterns

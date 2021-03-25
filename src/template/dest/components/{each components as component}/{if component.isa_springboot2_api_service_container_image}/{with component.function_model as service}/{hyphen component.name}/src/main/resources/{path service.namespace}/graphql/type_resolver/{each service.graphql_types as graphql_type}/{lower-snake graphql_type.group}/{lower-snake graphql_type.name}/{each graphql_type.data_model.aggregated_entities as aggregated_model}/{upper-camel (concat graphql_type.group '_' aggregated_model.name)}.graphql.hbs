@@ -10,6 +10,16 @@ type {{type_name}} {
     """
     {{lower-camel property.name}}: {{property.class_name}}{{if (not property.nullable) '!'}},
     {{/each}}
+    {{#each aggregated_model.aggregates as |aggregate| ~}}
+    {{define 'type_name' (printf
+      (if aggregate.multiple '[%s!]' '%s')
+      (upper-camel (concat graphql_type.group '_' aggregate.reference_entity.name))
+    ) ~}}
+    """
+    {{trim aggregate.description}}
+    """
+    {{lower-camel aggregate.name}}: {{type_name}}{{if (not aggregate.nullable) '!'}},
+    {{/each}}
     {{define 'fields' (filter query_fields_with_fetcher '(eq @it.context_data_model_name aggregated_model.name)') ~}}
     {{#each fields as |field| ~}}
     """
